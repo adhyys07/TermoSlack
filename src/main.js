@@ -2,8 +2,19 @@ import { WebClient } from "@slack/web-api";
 import { RTMClient } from "@slack/rtm-api";
 import readline from "readline";
 import chalk from "chalk";
+import { env } from "process";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 
-const token = "xoxb-2210535565-9860625835875-K8TlChB6XDbmR5eDMgKe122S"; 
+const token = env.SLACK_TOKEN || env.slack_token;
+if (!token) {
+  console.error(chalk.red("Missing SLACK_TOKEN environment variable. Set SLACK_TOKEN (or slack_token) before running."));
+  process.exit(1);
+}
 const web = new WebClient(token);
 const rtm = new RTMClient(token);
 
@@ -39,7 +50,7 @@ rtm.on("message", (event) => {
 
 async function main() {
   console.clear();
-  console.log(chalk.magenta.bold("💬 Terminal Slack"));
+  console.log(chalk.magenta.bold("TermoSlack"));
   console.log(chalk.gray("Type /help for commands.\n"));
   
   await rtm.start();
