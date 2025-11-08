@@ -2,6 +2,7 @@
   "name": "termoslack",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -27,4 +28,6 @@
     "node-emoji": "^2.2.0",
     "readline": "^1.3.0"
   }
+
+
 }

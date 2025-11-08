@@ -10,9 +10,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 
-const token = env.SLACK_TOKEN || env.slack_token;
+const token = env.SLACK_BOT_TOKEN || env.slack_token;
 if (!token) {
-  console.error(chalk.red("Missing SLACK_TOKEN environment variable. Set SLACK_TOKEN (or slack_token) before running."));
+  console.error(chalk.red("Missing SLACK_BOT_TOKEN environment variable. Set SLACK_BOT_TOKEN (or slack_token) before running."));
   process.exit(1);
 }
 const web = new WebClient(token);
