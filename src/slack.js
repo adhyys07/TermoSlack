@@ -10,15 +10,19 @@ export class SlackClient {
         })
         this.channels = [];
     }
-    async start(onMessage){
-        await this.rtm.start();
-        this.rtm.on("message", (event) => {
-            if (event.text && event.user) {
-                onMessage(event.user, event.text);
-            }
-        });
-        await this.socket.start();
-    }
+    async start(onMessage) {
+    this.socket.on("events_api", async ({ envelope_id, payload }) => {
+      const event = payload.event;
+
+      if (event.type === "message" && event.user && event.text) {
+        onMessage(event.user, event.text);
+      }
+
+      await this.socket.ack(envelope_id);
+    });
+
+    await this.socket.start();
+  }
 
     async getChannels() {
         const res = await this.web.conversations.list();
@@ -26,7 +30,7 @@ export class SlackClient {
         return this.channels;
     }
 
-    async sendMessage(channelId, text) {
+    async sendMessage(channel, text) {
         await this.web.chat.postMessage({ channel, text });
     }
 

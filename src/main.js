@@ -7,7 +7,7 @@ async function main() {
   const slack = new SlackClient();
 
   ui.log(chalk.gray("Connecting to Slack..."));
-
+  
   try {
     await slack.start(async (userId, text) => {
       const user = await slack.getUserName(userId);
@@ -19,21 +19,22 @@ async function main() {
     ui.log(chalk.green("Connected to Slack! Select channel to start slaying !"))
 
     ui.onChannelSelect((item, index) => {
-      ui.currentchannel = slack.channels[index].id;
-      ui.log('Switched to #${item.getText()}')
+      ui.currentChannel = slack.channels[index].id;
+      ui.log(`Switched to #${item.getText()}`);
     });
     
     ui.onSend(async (msg) => {
-      if (!ui.currentchannel) {
+      if (!ui.currentChannel) {
         ui.log(chalk.red("Select a channel first!"));
         return;
       }
 
-      await slack.sendMessage(ui.currentchannel, msg);
+      await slack.sendMessage(ui.currentChannel, msg);
       ui.addMessage("Me", msg);
     });
   } catch (err) {
-    ui.log(chalk.red("Error connecting to Slack: "));
+    ui.log(chalk.red("Error connecting to Slack:"));
+    ui.log(chalk.red(err?.data?.error || err?.message || String(err)));
     console.error(err);
   }
 }
