@@ -1,6 +1,5 @@
 import blessed  from "neo-blessed";
 import chalk from "chalk";
-import { input } from "blessed";
 
 export function createUI() {
     const screen = blessed.screen({
