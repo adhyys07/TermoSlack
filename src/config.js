@@ -1,20 +1,30 @@
 import dotenv from "dotenv";
-import {dirname, join} from "path";
+import path from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(__filename);
 
-dotenv.config({ 
-    path: join(__dirname, "../.env"),
- });
+// Determine env path: next to exe when packaged, otherwise project root
+let envPath;
+if (process.pkg) {
+  envPath = path.join(path.dirname(process.execPath), ".env");
+} else {
+  envPath = path.join(__dirname, "../.env");
+}
+
+console.log("Loading .env from:", envPath);
+dotenv.config({ path: envPath });
 
 export const config = {
-    botToken : process.env.SLACK_BOT_TOKEN,
-    appToken: process.env.SLACK_APP_TOKEN,
+  botToken: process.env.SLACK_BOT_TOKEN,
+  appToken: process.env.SLACK_APP_TOKEN,
+  clientId: process.env.SLACK_CLIENT_ID,
+  clientSecret: process.env.SLACK_CLIENT_SECRET,
+  oauthPort: Number(process.env.OAUTH_PORT || 3000),
 };
 
-if (!config.botToken) {
-    console.error("MISSING SLACK_BOT_TOKEN in your .env. Add it to proceed further")
-    process.exit(1);
+// simple validation
+if (!config.botToken || !config.appToken || !config.clientId || !config.clientSecret) {
+  console.warn("⚠️  One or more tokens/credentials are missing in .env. Make sure SLACK_BOT_TOKEN, SLACK_APP_TOKEN, SLACK_CLIENT_ID and SLACK_CLIENT_SECRET are set.");
 }
