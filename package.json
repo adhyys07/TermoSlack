@@ -4,10 +4,11 @@
   "main": "index.js",
   "type": "module",
   "bin": {
-    "termoslack": "./src/main.js"
+    "termoslack": "./bootstrap.cjs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:exe": "npx pkg . --targets node18-win-x64 --output termoslack.exe"
   },
   "repository": {
     "type": "git",
@@ -35,9 +36,6 @@
     "readline": "^1.3.0"
   },
   "pkg": {
-    "scripts": "src/**/*.js",
-    "assets": [
-      ".env"
-    ]
+    "scripts": "src/**/*.js"
   }
 }
