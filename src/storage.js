@@ -13,14 +13,33 @@ function ensureDirs() {
 export function saveSession(workspaceId, sessionObj) {
     ensureDirs();
     const file = path.join(SESSIONS_DIR, `${workspaceId}.json`);
-    fs.writeFileSync(file, JSON.stringify(sessionObj , null , 2 ), {mode: 0o600});
+    // normalize token keys so older session formats still include userToken
+    const normalized = Object.assign({}, sessionObj);
+    normalized.userToken = normalized.userToken || normalized.access_token || normalized.token || (normalized.authed_user && normalized.authed_user.access_token) || normalized.user_token || null;
+    try {
+        fs.writeFileSync(file, JSON.stringify(normalized , null , 2 ), {mode: 0o600});
+        // log path for debugging
+        try { console.log(`Saved session for ${workspaceId} -> ${file}`); } catch (e) {}
+    } catch (e) {
+        // fallback without mode (Windows)
+        fs.writeFileSync(file, JSON.stringify(normalized , null , 2 ));
+        try { console.log(`Saved session for ${workspaceId} -> ${file}`); } catch (e) {}
+    }
 }
 
 export function loadSession(workspaceId) {
     ensureDirs();
     const file= path.join(SESSIONS_DIR, `${workspaceId}.json`);
     if(!fs.existsSync(file)) return null;
-    return JSON.parse(fs.readFileSync(file, "utf-8"));
+    try {
+        const raw = JSON.parse(fs.readFileSync(file, "utf-8"));
+        // normalize possible token field names to `userToken`
+        const normalized = Object.assign({}, raw);
+        normalized.userToken = normalized.userToken || normalized.access_token || normalized.token || (normalized.authed_user && normalized.authed_user.access_token) || normalized.user_token || null;
+        return normalized;
+    } catch (e) {
+        return null;
+    }
 }
 
 export function listSessions() {

@@ -38,6 +38,19 @@ async function main() {
   const ui = createUI();
   const bot = new SlackBot();
 
+  function handleSlackApiError(err) {
+    if (!err || !err.data) return false;
+    const data = err.data;
+    if (data.error === "missing_scope" || data.error === "missing_required_scope") {
+      const needed = data.needed || (data.response_metadata && data.response_metadata.scopes && data.response_metadata.scopes.join(',')) || '(unknown)';
+      const provided = data.provided || '(none)';
+      ui.log(chalk.red(`Slack API missing_scope error — needed: ${needed}; provided: ${provided}`));
+      ui.log(chalk.yellow("Fix: In your Slack App → OAuth & Permissions add the missing Bot Token Scopes above, then click 'Install App' → 'Reinstall to Workspace'. After reinstall, update SLACK_BOT_TOKEN in .env and restart the app."));
+      return true;
+    }
+    return false;
+  }
+
   // Connection diagnostics: show token presence and prefixes (masked)
   const mask = (t) => t ? `${t.slice(0,6)}...${t.slice(-4)}` : '(missing)';
   ui.log(chalk.gray(`Runtime dir: ${runtimeDir}`));
@@ -65,15 +78,22 @@ async function main() {
   }, connectTimeoutMs);
 
   const auth = createAuthServer(async (oauthResult) => {
-    const userToken = oauthResult.authed_user && oauthResult.authed_user.access_token;
-    const team = oauthResult.team && oauthResult.team.id;
-    if (!userToken || !team){
+    const normalized = {
+      result: oauthResult.result || oauthResult,
+      botToken: oauthResult.botToken || (oauthResult.access_token || null),
+      userToken: oauthResult.userToken || (oauthResult.authed_user && oauthResult.authed_user.access_token) || null,
+      teamId: oauthResult.teamId || (oauthResult.team && oauthResult.team.id) || oauthResult.team_id || null
+    };
+
+    if (!normalized.userToken || !normalized.teamId) {
       ui.log(chalk.red("OAuth success but missing user token or team ID"));
       return;
     }
-    saveSession(team, {userToken,teamName: oauthResult.team.name});
-    ui.log(chalk.green(`Saved session for workspace ${oauthResult.team.name}`)); 
-   });
+
+    const teamName = (normalized.result && normalized.result.team && normalized.result.team.name) || normalized.result.teamName || "(unknown)";
+    saveSession(normalized.teamId, { userToken: normalized.userToken, teamName });
+    ui.log(chalk.green(`Saved session for workspace ${teamName}`));
+  });
 
    ui.log(`Oauth URL: ${auth.loginUrl()}`);
 
@@ -106,8 +126,14 @@ async function main() {
       }
     }
       ui.onChannelSelect(async (item, i) => {
-        ui.currentChannel = bot.channels[i].id;
-        ui.log(`Switched to #${item.getText()}`);
+        // Use UI's stored channel objects so index maps correctly to id
+        const chObj = ui.channelObjects && ui.channelObjects[i];
+        if (!chObj || !chObj.id) {
+          ui.log(chalk.red('Failed to determine channel id for selection'));
+          return;
+        }
+        ui.currentChannel = chObj.id;
+        ui.log(`Switched to #${chObj.name}`);
         const hist = await bot.web.conversations.history({channel: ui.currentChannel, limit: 20});
         ui.log("-----recent messages-----");
         (hist.messages || []).reverse().forEach(m => {
@@ -143,8 +169,19 @@ async function main() {
     catch (err) {
     clearTimeout(connectTimeout);
     ui.log(chalk.red("Error connecting to Slack:"));
-    console.error("FULL ERROR:", err);
-    ui.log(String(err));
+    // If this is a missing_scope platform error, show actionable guidance
+    if (handleSlackApiError(err)) {
+      // handled and message shown
+    } else if (err && err.data && err.data.error === 'missing_scope') {
+      // fallback: parse data
+      const needed = err.data.needed || '(unknown)';
+      const provided = err.data.provided || '(none)';
+      ui.log(chalk.red(`Slack API missing_scope — needed: ${needed}; provided: ${provided}`));
+      ui.log(chalk.yellow("Fix: Add missing Bot Token Scopes in Slack App → OAuth & Permissions, then reinstall and update SLACK_BOT_TOKEN."));
+    } else {
+      console.error("FULL ERROR:", err);
+      ui.log(String(err));
+    }
   }
 }
 

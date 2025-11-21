@@ -51,13 +51,18 @@ export function createUI() {
 
     screen.key(['C-c'], () => process.exit(0));
     
-    const ui = {
-    screen, channelList, chatBox, input, currentChannel: null,
-    log(msg) { chatBox.insertBottom(chalk.gray(msg)); chatBox.scrollTo(chatBox.getScrollHeight()); screen.render(); },
-    addMessage(user, text) { chatBox.insertBottom(chalk.cyan(`[${user}] `) + text); chatBox.scrollTo(chatBox.getScrollHeight()); screen.render(); },
-    setChannels(channels) { channelList.setItems(channels.map(c => c.name)); screen.render(); },
-    onChannelSelect(cb) { channelList.on("select", (item, i) => cb(item, i)); },
-    onSend(cb) { input.on("submit", (msg) => { cb(msg); input.clearValue(); screen.render(); input.focus(); }); }
-  };
+        const ui = {
+        screen, channelList, chatBox, input, currentChannel: null, channelObjects: [],
+        log(msg) { chatBox.insertBottom(chalk.gray(msg)); chatBox.scrollTo(chatBox.getScrollHeight()); screen.render(); },
+        addMessage(user, text) { chatBox.insertBottom(chalk.cyan(`[${user}] `) + text); chatBox.scrollTo(chatBox.getScrollHeight()); screen.render(); },
+        setChannels(channels) { 
+                // store full channel objects so selection maps correctly
+                ui.channelObjects = channels.map(c => ({ id: c.id || c.channel || c.conversation || null, name: c.name || c.label || c.id || '<unknown>' }));
+                channelList.setItems(ui.channelObjects.map(c => c.name));
+                screen.render();
+        },
+        onChannelSelect(cb) { channelList.on("select", (item, i) => cb(item, i)); },
+        onSend(cb) { input.on("submit", (msg) => { cb(msg); input.clearValue(); screen.render(); input.focus(); }); }
+    };
     return ui;
 }
