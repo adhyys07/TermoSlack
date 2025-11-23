@@ -28,8 +28,10 @@
     "@slack/web-api": "^7.12.0",
     "blessed": "^0.1.81",
     "chalk": "^5.6.2",
+    "console": "^0.7.2",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "log": "^6.3.2",
     "neo-blessed": "^0.2.0",
     "node-emoji": "^2.2.0",
     "open": "^10.2.0",
@@ -42,10 +44,9 @@
       ".env"
     ],
     "targets": [
-    "node20-win-x64"
-  ],
+      "node20-win-x64"
+    ],
     "outputPath": "dist"
-    
   },
   "devDependencies": {
     "caxa": "^3.0.1"

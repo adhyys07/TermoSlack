@@ -1,6 +1,3 @@
-#!/usr/bin/env node
-// Alternative entry point using CommonJS for pkg compatibility
-// This wraps the ESM modules for the packaged executable
 
 const path = require('path');
 const { pathToFileURL } = require('url');

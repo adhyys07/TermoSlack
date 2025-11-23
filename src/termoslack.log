@@ -68,3 +68,12 @@ Error: An API error occurred: restricted_action
     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
 [2025-11-23T14:46:55.840Z] [INFO] Message sent to channel C08KV16A0Q5
 [2025-11-23T14:47:54.192Z] [INFO] Message sent to channel C08F58MT3GV
+[2025-11-23T15:40:19.572Z] [INFO] TermoSlack starting...
+[2025-11-23T15:40:19.579Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T15:40:19.640Z] [ERROR] Unhandled rejection
+TypeError: Cannot read properties of undefined (reading 'log')
+    at main (file:///E:/TermoSlack/src/main.js:77:6)
+    at file:///E:/TermoSlack/src/main.js:273:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:271:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:578:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)

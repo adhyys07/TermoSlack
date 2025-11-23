@@ -1,0 +1,195 @@
+[2025-11-23T15:40:19.638Z] [FATAL] Unhandled promise rejection
+  Error: Cannot read properties of undefined (reading 'log')
+  Stack: TypeError: Cannot read properties of undefined (reading 'log')
+    at main (file:///E:/TermoSlack/src/main.js:77:6)
+    at file:///E:/TermoSlack/src/main.js:273:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:271:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:578:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+[2025-11-23T15:45:13.401Z] [INFO] TermoSlack starting...
+[2025-11-23T15:45:13.403Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T15:45:13.410Z] [INFO] Found 1 saved session(s)
+[2025-11-23T15:45:13.411Z] [INFO] Attempting to restore session
+[2025-11-23T15:45:13.414Z] [INFO] Loading user channels and DMs
+[2025-11-23T15:45:15.238Z] [ERROR] Failed to load channels
+  Error: Cannot read properties of undefined (reading 'setLabel')
+  Stack: TypeError: Cannot read properties of undefined (reading 'setLabel')
+    at updateView (file:///E:/TermoSlack/src/ui.js:402:17)
+    at setChannels (file:///E:/TermoSlack/src/ui.js:424:3)
+    at loadUserChannels (file:///E:/TermoSlack/src/main.js:140:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async main (file:///E:/TermoSlack/src/main.js:88:9)
+[2025-11-23T15:45:15.239Z] [INFO] Session restored, starting UI
+[2025-11-23T15:46:07.743Z] [INFO] TermoSlack starting...
+[2025-11-23T15:46:07.744Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T15:46:07.833Z] [INFO] Found 1 saved session(s)
+[2025-11-23T15:46:07.835Z] [INFO] Attempting to restore session
+[2025-11-23T15:46:07.840Z] [INFO] Loading user channels and DMs
+[2025-11-23T15:46:10.284Z] [INFO] Loaded 449 channels/DMs
+[2025-11-23T15:46:10.285Z] [INFO] Session restored and channels loaded
+[2025-11-23T15:46:11.016Z] [INFO] Switched to channel acon-yaps (C075233ADD3)
+[2025-11-23T15:46:16.868Z] [INFO] Switched to channel adhyys-backyard (C03QPB0SU3V)
+[2025-11-23T15:46:17.305Z] [INFO] Switched to channel alleyway (C0266FRGT)
+[2025-11-23T15:46:17.443Z] [INFO] Switched to channel amas (C0266FRGT)
+[2025-11-23T15:46:17.454Z] [INFO] Switched to channel alex-containment-chamber (C0266FRGT)
+[2025-11-23T15:46:17.774Z] [INFO] Switched to channel announcements (C03QPB0SU3V)
+[2025-11-23T15:46:18.104Z] [INFO] Switched to channel amas (C03QPB0SU3V)
+[2025-11-23T15:46:21.735Z] [INFO] Switched to channel announcements (C0266FRGT)
+[2025-11-23T15:46:22.884Z] [INFO] Switched to channel amas (C03QPB0SU3V)
+[2025-11-23T15:46:24.117Z] [INFO] Switched to channel alleyway (C09EQ4YNPM2)
+[2025-11-23T15:46:28.889Z] [INFO] Switched to channel amas (C09EF889S8J)
+[2025-11-23T15:46:29.254Z] [INFO] Switched to channel announcements (C099P9FQQ91)
+[2025-11-23T15:46:29.335Z] [INFO] Switched to channel artem-life (C09GSTH65B7)
+[2025-11-23T15:46:29.478Z] [INFO] Switched to channel ask-the-fraud-team (C09GSTH65B7)
+[2025-11-23T15:46:29.658Z] [INFO] Switched to channel ask-the-shipwrights (C08KVAXUKK3)
+[2025-11-23T15:46:29.931Z] [INFO] Switched to channel ask-the-stonemasons (C08KV16A0Q5)
+[2025-11-23T15:46:30.295Z] [INFO] Switched to channel blend (C08KV16A0Q5)
+[2025-11-23T15:46:30.360Z] [INFO] Switched to channel blend-pvt (C08KV16A0Q5)
+[2025-11-23T15:46:38.147Z] [INFO] Switched to channel blueprint (C083S537USC)
+[2025-11-23T15:46:47.528Z] [INFO] Switched to channel blend-pvt (C09EF889S8J)
+[2025-11-23T15:46:47.775Z] [INFO] Switched to channel blend (C08TVL24DJP)
+[2025-11-23T15:46:48.010Z] [INFO] Switched to channel ask-the-shipwrights (C08TVL24DJP)
+[2025-11-23T15:46:48.051Z] [INFO] Switched to channel ask-the-stonemasons (C08TVL24DJP)
+[2025-11-23T15:46:48.249Z] [INFO] Switched to channel ask-the-fraud-team (C08TVL24DJP)
+[2025-11-23T15:46:54.046Z] [INFO] Switched to channel announcements (C09GSTH65B7)
+[2025-11-23T15:46:57.450Z] [INFO] Switched to channel artem-life (C09GSTH65B7)
+[2025-11-23T15:46:57.659Z] [INFO] Switched to channel ask-the-fraud-team (C09GSTH65B7)
+[2025-11-23T15:46:57.816Z] [INFO] Switched to channel ask-the-stonemasons (C09GSTH65B7)
+[2025-11-23T15:46:57.980Z] [INFO] Switched to channel ask-the-shipwrights (C09GSTH65B7)
+[2025-11-23T15:46:58.993Z] [INFO] Switched to channel amas (C09GSTH65B7)
+[2025-11-23T15:46:59.088Z] [INFO] Switched to channel artem-life (C09GSTH65B7)
+[2025-11-23T15:47:05.723Z] [INFO] TermoSlack starting...
+[2025-11-23T15:47:05.725Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T15:47:05.796Z] [INFO] Found 1 saved session(s)
+[2025-11-23T15:47:05.797Z] [INFO] Attempting to restore session
+[2025-11-23T15:47:05.801Z] [INFO] Loading user channels and DMs
+[2025-11-23T15:47:07.510Z] [INFO] Switched to channel announcements (C09GSTH65B7)
+[2025-11-23T15:47:56.000Z] [INFO] TermoSlack starting...
+[2025-11-23T15:47:56.002Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T15:47:56.058Z] [INFO] Found 1 saved session(s)
+[2025-11-23T15:47:56.058Z] [INFO] Attempting to restore session
+[2025-11-23T15:47:56.062Z] [INFO] Loading user channels and DMs
+[2025-11-23T15:47:56.805Z] [INFO] Loaded 449 channels/DMs
+[2025-11-23T15:47:56.806Z] [INFO] Session restored and channels loaded
+[2025-11-23T15:47:57.570Z] [INFO] Switched to channel acon-yaps (C075233ADD3)
+[2025-11-23T15:49:38.420Z] [INFO] Switched to channel adhyys-backyard (C099PKTR8Q4)
+[2025-11-23T15:49:45.159Z] [INFO] Switched to channel alex-containment-chamber (C0799LEA75X)
+[2025-11-23T15:52:18.124Z] [INFO] TermoSlack starting...
+[2025-11-23T15:52:18.125Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T15:52:18.189Z] [INFO] Found 1 saved session(s)
+[2025-11-23T15:52:18.190Z] [INFO] Attempting to restore session
+[2025-11-23T15:52:18.194Z] [INFO] Loading user channels and DMs
+[2025-11-23T15:52:18.918Z] [INFO] Loaded 449 channels/DMs
+[2025-11-23T15:52:18.919Z] [INFO] Session restored and channels loaded
+[2025-11-23T15:52:35.491Z] [INFO] Switched to channel mpdm-anish_anne--rushilchopra123--tstubblefield487--adhdhyan.jain-1 (C08KHRSC754)
+[2025-11-23T15:52:54.392Z] [INFO] Switched to channel U01581HFAGZ (D08PG7Z8J1J)
+[2025-11-23T15:57:09.259Z] [INFO] Switched to channel U01G0Q9K998 (D0981CUA7FE)
+[2025-11-23T15:57:12.124Z] [INFO] Switched to channel U01G0Q9K998 (D0981CUA7FE)
+[2025-11-23T15:58:12.857Z] [INFO] TermoSlack starting...
+[2025-11-23T15:58:12.859Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T15:58:12.922Z] [INFO] Found 1 saved session(s)
+[2025-11-23T15:58:12.923Z] [INFO] Attempting to restore session
+[2025-11-23T15:58:12.926Z] [INFO] Loading user channels and DMs
+[2025-11-23T15:59:36.830Z] [INFO] TermoSlack starting...
+[2025-11-23T15:59:36.831Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T15:59:36.891Z] [INFO] Found 1 saved session(s)
+[2025-11-23T15:59:36.892Z] [INFO] Attempting to restore session
+[2025-11-23T15:59:36.895Z] [INFO] Loading user channels and DMs
+[2025-11-23T16:02:06.709Z] [INFO] TermoSlack starting...
+[2025-11-23T16:02:06.710Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T16:02:06.785Z] [INFO] Found 1 saved session(s)
+[2025-11-23T16:02:06.786Z] [INFO] Attempting to restore session
+[2025-11-23T16:02:06.790Z] [INFO] Loading user channels and DMs
+[2025-11-23T16:14:54.801Z] [INFO] TermoSlack starting...
+[2025-11-23T16:14:54.802Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T16:14:54.878Z] [INFO] Found 1 saved session(s)
+[2025-11-23T16:14:54.879Z] [INFO] Attempting to restore session
+[2025-11-23T16:14:54.882Z] [INFO] Loading user channels and DMs
+[2025-11-23T16:15:33.380Z] [INFO] Loaded 449 channels/DMs
+[2025-11-23T16:15:33.381Z] [INFO] Session restored and channels loaded
+[2025-11-23T16:29:14.988Z] [INFO] TermoSlack starting...
+[2025-11-23T16:29:14.990Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T16:29:15.102Z] [INFO] Found 1 saved session(s)
+[2025-11-23T16:29:15.103Z] [INFO] Attempting to restore session
+[2025-11-23T16:29:15.108Z] [INFO] Loading user channels and DMs
+[2025-11-23T16:31:00.996Z] [INFO] TermoSlack starting...
+[2025-11-23T16:31:00.997Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T16:31:01.058Z] [INFO] Found 1 saved session(s)
+[2025-11-23T16:31:01.059Z] [INFO] Attempting to restore session
+[2025-11-23T16:31:01.062Z] [INFO] Loading user channels and DMs
+[2025-11-23T16:33:34.847Z] [INFO] TermoSlack starting...
+[2025-11-23T16:33:34.848Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T16:33:34.917Z] [INFO] Found 1 saved session(s)
+[2025-11-23T16:33:34.918Z] [INFO] Attempting to restore session
+[2025-11-23T16:33:34.922Z] [INFO] Loading channels
+[2025-11-23T16:33:35.616Z] [INFO] Loaded 449 channels/DMs
+[2025-11-23T16:33:35.627Z] [INFO] Session restored and channels loaded
+[2025-11-23T16:33:44.655Z] [INFO] Switched to channel adhyys-backyard (C099PKTR8Q4)
+[2025-11-23T16:33:48.966Z] [INFO] Switched to channel adhyys-backyard (C099PKTR8Q4)
+[2025-11-23T16:33:51.955Z] [INFO] Switched to channel alleyway (C09EQ4YNPM2)
+[2025-11-23T16:33:58.832Z] [INFO] Switched to channel alex-containment-chamber (C0799LEA75X)
+[2025-11-23T16:34:14.380Z] [INFO] DM user names loaded
+[2025-11-23T16:34:41.234Z] [INFO] Switched to channel Amber (D0920KY5TPT)
+[2025-11-23T16:34:41.311Z] [INFO] Switched to channel Amber (D0920KY5TPT)
+[2025-11-23T16:37:32.035Z] [INFO] TermoSlack starting...
+[2025-11-23T16:37:32.036Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T16:37:32.102Z] [INFO] Found 1 saved session(s)
+[2025-11-23T16:37:32.103Z] [INFO] Attempting to restore session
+[2025-11-23T16:37:32.107Z] [INFO] Loading channels
+[2025-11-23T16:37:32.831Z] [INFO] Loaded 155 channels/DMs
+[2025-11-23T16:37:32.838Z] [INFO] Session restored and channels loaded
+[2025-11-23T16:40:27.542Z] [INFO] TermoSlack starting...
+[2025-11-23T16:40:27.545Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T16:40:27.624Z] [INFO] Found 1 saved session(s)
+[2025-11-23T16:40:27.625Z] [INFO] Attempting to restore session
+[2025-11-23T16:40:27.629Z] [INFO] Loading channels
+[2025-11-23T16:40:28.292Z] [INFO] Loaded 155 channels/DMs
+[2025-11-23T16:40:28.300Z] [INFO] Session restored and channels loaded
+[2025-11-23T16:41:08.646Z] [INFO] DM user names loaded
+[2025-11-23T16:46:10.092Z] [INFO] TermoSlack starting...
+[2025-11-23T16:46:10.095Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T16:46:10.204Z] [INFO] Found 1 saved session(s)
+[2025-11-23T16:46:10.205Z] [INFO] Attempting to restore session
+[2025-11-23T16:46:10.210Z] [INFO] Loading channels
+[2025-11-23T16:46:10.861Z] [INFO] Loaded 155 channels/DMs
+[2025-11-23T16:46:10.869Z] [INFO] Session restored and channels loaded
+[2025-11-23T16:46:21.940Z] [INFO] Switched to channel fuck (CV2SCDUHG)
+[2025-11-23T16:46:37.343Z] [INFO] Message sent to channel CV2SCDUHG
+[2025-11-23T16:46:54.259Z] [INFO] DM user names loaded
+[2025-11-23T16:48:00.935Z] [INFO] TermoSlack starting...
+[2025-11-23T16:48:00.936Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T16:48:00.997Z] [INFO] Found 1 saved session(s)
+[2025-11-23T16:48:00.998Z] [INFO] Attempting to restore session
+[2025-11-23T16:48:01.002Z] [INFO] Loading channels
+[2025-11-23T16:48:01.701Z] [INFO] Loaded 155 channels/DMs
+[2025-11-23T16:48:01.708Z] [INFO] Session restored and channels loaded
+[2025-11-23T16:48:43.696Z] [INFO] DM user names loaded
+[2025-11-23T16:50:18.316Z] [INFO] TermoSlack starting...
+[2025-11-23T16:50:18.317Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T16:50:18.380Z] [INFO] Found 1 saved session(s)
+[2025-11-23T16:50:18.381Z] [INFO] Attempting to restore session
+[2025-11-23T16:50:18.384Z] [INFO] Loading channels
+[2025-11-23T16:50:19.065Z] [INFO] Loaded 172 channels/DMs
+[2025-11-23T16:50:19.065Z] [INFO] Session restored and channels loaded
+[2025-11-23T16:52:41.307Z] [INFO] TermoSlack starting...
+[2025-11-23T16:52:41.308Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T16:52:41.378Z] [INFO] Found 1 saved session(s)
+[2025-11-23T16:52:41.379Z] [INFO] Attempting to restore session
+[2025-11-23T16:52:41.383Z] [INFO] Loading channels
+[2025-11-23T16:52:42.137Z] [INFO] Loaded 172 channels/DMs
+[2025-11-23T16:52:42.146Z] [INFO] Session restored and channels loaded
+[2025-11-23T16:52:45.106Z] [INFO] DM user names loaded
+[2025-11-23T16:55:30.862Z] [INFO] TermoSlack starting...
+[2025-11-23T16:55:30.863Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T16:55:30.925Z] [INFO] Found 1 saved session(s)
+[2025-11-23T16:55:30.925Z] [INFO] Attempting to restore session
+[2025-11-23T16:55:30.929Z] [INFO] Loading channels
+[2025-11-23T16:55:31.584Z] [INFO] Found 294 DMs, showing top 25 recent
+[2025-11-23T16:55:31.636Z] [INFO] Loaded 172 channels/DMs
+[2025-11-23T16:55:31.641Z] [INFO] Session restored and channels loaded
+[2025-11-23T16:55:34.576Z] [INFO] DM user names loaded
+[2025-11-23T16:55:47.764Z] [INFO] Switched to channel applePerson (D09R29FAA8P)
+[2025-11-23T16:55:51.745Z] [INFO] Switched to channel Orpheus Claus (D09TBGQ4Y22)
+[2025-11-23T16:55:53.718Z] [INFO] Switched to channel Flavorpheus (D09RH7KLXTL)
+[2025-11-23T16:55:54.802Z] [INFO] Switched to channel felix (D09T41BRGLE)
+[2025-11-23T16:55:57.516Z] [INFO] Switched to channel Alex Van Doren (D09PK3KNXGR)
