@@ -27,32 +27,32 @@ export function createAuthServer(onSuccess) {
 
     const redirectUri = process.env.OAUTH_REDIRECT_URI || config.redirectUri || `http://localhost:${port}/auth/callback`;
 
-    const botScopes = [
-        "chat:write",
+    // User scopes for full user-based Slack client
+    const userScopes = [
         "channels:read",
+        "channels:write",
         "channels:history",
+        "chat:write",
+        "users:read",
         "groups:read",
+        "groups:write",
         "groups:history",
         "mpim:read",
+        "mpim:write",
         "mpim:history",
         "im:read",
-        "im:history",
         "im:write",
+        "im:history",
+        "files:read",
         "files:write",
+        "reactions:read",
         "reactions:write",
-        "users:read"
-    ].join(" ");
-
-    // sanitize user scopes from env/config: remove surrounding quotes and collapse whitespace
-    let userScopes = process.env.OAUTH_USER_SCOPES || config.userScopes || "";
-    if (typeof userScopes === 'string') {
-        userScopes = userScopes.replace(/^"+|"+$/g, '').trim().replace(/\s+/g, ' ');
-    } else {
-        userScopes = '';
-    }
+        "search:read",
+        "emoji:read",
+        "usergroups:read"
+    ].join(",");
 
     console.log("OAuth redirect URI:", redirectUri);
-    console.log("OAuth scopes requested:", botScopes);
     console.log("User OAuth scopes requested:", userScopes);
 
     app.get("/",(req,res)=>{
@@ -60,10 +60,9 @@ export function createAuthServer(onSuccess) {
     });
 
     app.get("/login", (req, res) => {
-        let redirect = `https://slack.com/oauth/v2/authorize?client_id=${config.clientId}` +
-            `&scope=${encodeURIComponent(botScopes)}` +
+        const redirect = `https://slack.com/oauth/v2/authorize?client_id=${config.clientId}` +
+            `&user_scope=${encodeURIComponent(userScopes)}` +
             `&redirect_uri=${encodeURIComponent(redirectUri)}`;
-        if (userScopes && userScopes.trim()) redirect += `&user_scope=${encodeURIComponent(userScopes)}`;
         open(redirect);
         res.send(`Opened browser for Slack login. If not, open this URL:\n\n${redirect}`);
     });
@@ -123,17 +122,21 @@ export function createAuthServer(onSuccess) {
             } catch(e) {}
 
             // normalize returned tokens and ids
-            const botToken = result.access_token || null;
             const authedUser = result.authed_user || null;
             const userToken = authedUser ? authedUser.access_token : null;
             const teamId = (result.team && result.team.id) || result.team_id || null;
+            const userId = authedUser ? authedUser.id : null;
 
-            if (!botToken) console.warn('OAuth: no bot token in response');
-            if (!userToken) console.warn('OAuth: no user token returned (user scopes may not have been granted)');
+            if (!userToken) {
+                console.error('OAuth: no user token returned - user scopes may not have been granted');
+                res.status(400).send('<h3>Authentication failed: No user token received. Please ensure you approve the requested permissions.</h3>');
+                return;
+            }
             if (!teamId) console.warn('OAuth: no team id returned');
+            if (!userId) console.warn('OAuth: no user id returned');
 
             // call the provided success handler with normalized data
-            await onSuccess({ result, botToken, userToken, teamId });
+            await onSuccess({ result, userToken, teamId, userId });
             res.send("<h3>Authorization Successful, return to the app</h3>")
         } catch (err) {
             // Detailed error logging for token exchange failures

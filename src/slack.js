@@ -4,11 +4,40 @@ import {config} from "./config.js";
 
 export class SlackBot {
     constructor() {
+        // Validate token is a bot token to avoid accidental use of user tokens
+        if (!config.botToken || !String(config.botToken).startsWith('xoxb-')) {
+            console.error("SLACK_BOT_TOKEN is not a Bot token (must start with 'xoxb-'). Current token (masked):", String(config.botToken || '(missing)').slice(0,8) + '...');
+            throw new Error("Invalid bot token used for WebClient. Ensure SLACK_BOT_TOKEN is the Bot User OAuth Token (xoxb-...) in .env and not overwritten by saved sessions.");
+        }
+        
+        if (!config.appToken || !String(config.appToken).startsWith('xapp-')) {
+            console.error("SLACK_APP_TOKEN is missing or not an app token (must start with 'xapp-'). Current token (masked):", String(config.appToken || '(missing)').slice(0,8) + '...');
+            throw new Error("Invalid app token. Ensure SLACK_APP_TOKEN is set in .env and Socket Mode is enabled in your Slack App settings.");
+        }
+        
         this.web = new WebClient(config.botToken);
         this.socket = new SocketModeClient({
             appToken: config.appToken,
-            loglevel: "info"
+            logLevel: "error" // reduce noise, only show errors
         });
+        
+        // Add error handlers for Socket Mode
+        this.socket.on('error', (error) => {
+            console.error('Socket Mode error:', error.message);
+            if (error.message && error.message.includes('408')) {
+                console.error('Socket Mode timeout (408). Check:');
+                console.error('1. SLACK_APP_TOKEN is valid and starts with xapp-');
+                console.error('2. Socket Mode is enabled in Slack App → Socket Mode settings');
+                console.error('3. Network/firewall allows WebSocket connections');
+            }
+        });
+        
+        this.socket.on('disconnect', (error) => {
+            if (error) {
+                console.error('Socket Mode disconnected:', error.message);
+            }
+        });
+        
         this.channels = [];
     }
     async start(onEvent) {
@@ -47,8 +76,13 @@ export class SlackBot {
 
     async getChannels() {
       try {
-        const res = await this.web.conversations.list();
-        this.channels = res.channels;
+        const res = await this.web.conversations.list({
+          types: 'public_channel,private_channel',
+          exclude_archived: true,
+          limit: 200
+        });
+        // Filter to only show channels the bot/user is a member of
+        this.channels = (res.channels || []).filter(ch => ch.is_member);
         return this.channels;
       } catch (e) {
         if (e && e.data && (e.data.error === 'missing_scope' || e.data.error === 'missing_required_scope')) {

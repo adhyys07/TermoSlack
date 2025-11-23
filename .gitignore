@@ -1,2 +1,6 @@
 .env
 node_modules/
+package-lock.json
+package.json
+src/crash.log
+src/oauth_error.log
