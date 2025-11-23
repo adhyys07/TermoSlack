@@ -14,9 +14,22 @@ export function createUI() {
         top: 0,
         left: 0,
         keys : true,
+        vi: true,
         mouse: true,
         border : "line",
-        style:{selected: {bg: "blue"}}
+        style: {
+            selected: {
+                bg: "blue",
+                fg: "white"
+            },
+            focus: {
+                border: {
+                    fg: "green"
+                }
+            }
+        },
+        interactive: true,
+        scrollable: true
     });
 
     const chatBox = blessed.box({
@@ -29,25 +42,53 @@ export function createUI() {
         tags:true,
         scrollable: true,
         alwaysScroll: true,
-        scrollbar :{ch: " ",style: {bg: "blue"}}
+        scrollbar: {
+            ch: " ",
+            style: {
+                bg: "blue"
+            }
+        }
     });
 
     const input = blessed.textbox({
         bottom: 0,
         height: 3,
-        inputonFocus: true,
+        inputOnFocus: true,
         keys: true,
-        mouse:true,
+        mouse: true,
         width: "100%",
         border: "line",
-        label: " Message ",
+        label: " Message (Tab to switch focus, Enter to send) ",
+        style: {
+            focus: {
+                border: {
+                    fg: "green"
+                }
+            }
+        }
     });
 
     screen.append(channelList);
     screen.append(chatBox);
     screen.append(input);
     
-    input.focus();
+    // Start with channel list focused
+    channelList.focus();
+
+    // Key bindings for switching focus
+    screen.key(['tab'], () => {
+        if (channelList.focused) {
+            input.focus();
+        } else {
+            channelList.focus();
+        }
+        screen.render();
+    });
+
+    screen.key(['escape'], () => {
+        channelList.focus();
+        screen.render();
+    });
 
     screen.key(['C-c'], () => process.exit(0));
     
@@ -57,7 +98,15 @@ export function createUI() {
         addMessage(user, text) { chatBox.insertBottom(chalk.cyan(`[${user}] `) + text); chatBox.scrollTo(chatBox.getScrollHeight()); screen.render(); },
         setChannels(channels) { 
                 // store full channel objects so selection maps correctly
-                ui.channelObjects = channels.map(c => ({ id: c.id || c.channel || c.conversation || null, name: c.name || c.label || c.id || '<unknown>' }));
+                ui.channelObjects = channels.map(c => {
+                    const displayName = c.displayName || c.name || c.id || '<unknown>';
+                    
+                    return { 
+                        id: c.id || c.channel || c.conversation || null, 
+                        name: displayName,
+                        rawChannel: c
+                    };
+                });
                 channelList.setItems(ui.channelObjects.map(c => c.name));
                 screen.render();
         },

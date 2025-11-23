@@ -1,7 +1,7 @@
 {
   "name": "termoslack",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "main.js",
   "type": "module",
   "bin": {
     "termoslack": "./bootstrap.cjs"
@@ -38,9 +38,14 @@
   "pkg": {
     "scripts": "src/**/*.js",
     "assets": [
-      "node_modules/**/*"
+      "node_modules/**/*",
+      ".env"
     ],
+    "targets": [
+    "node20-win-x64"
+  ],
     "outputPath": "dist"
+    
   },
   "devDependencies": {
     "caxa": "^3.0.1"
