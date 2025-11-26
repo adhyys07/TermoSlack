@@ -1,4 +1,5 @@
 import { WebClient } from "@slack/web-api";
+import { logInfo, logError } from "./logger.js";
 
 let userClient = null;
 
@@ -11,6 +12,10 @@ export function getUserClient() {
     return userClient;
 }
 
+export function getUserToken(){
+    return userClient?.token;
+}
+
 export function makeUserClient(userToken) {
     return new WebClient(userToken);
 }
@@ -21,52 +26,102 @@ export async function sendMessageAsUser(userToken, channel, text) {
 }
 
 export async function sendMessage(channelId, text) {
-    if (!userClient) {
-        throw new Error('User client not initialized');
+    try {
+        if (!userClient) {
+            throw new Error('User client not initialized');
     }
-    const result = await userClient.chat.postMessage({
-        channel: channelId,
-        text: text
+        const result = await userClient.chat.postMessage({
+            channel: channelId,
+            text: text
     });
-    return result;
+        logInfo(`Message sent to ${channelId}`);
+        return result;
+}       catch (error) {
+        logError(`Error sending message to ${channelId}: ${error.message}`);
+        throw error;
+}
 }
 
-export async function loadMessages(channelId, limit = 20) {
+
+export async function loadMessages(channelId, limit = 20, oldest = undefined) {
+  try {
     if (!userClient) {
-        throw new Error('User client not initialized');
+      throw new Error('User client not initialized');
     }
 
-    const result = await userClient.conversations.history({
-        channel: channelId,
-        limit: limit
-    });
+    const params = {
+      channel: channelId,
+      limit: limit
+    };
+    
+    // If oldest is provided, get messages before that timestamp
+    if (oldest) {
+      params.latest = oldest;
+    }
 
-    // Get user names for messages
+    const result = await userClient.conversations.history(params);
+
+    // Get user names for messages and detect images
     const messagesWithNames = await Promise.all(
-        result.messages.map(async (msg) => {
-            if (msg.user) {
-                try {
-                    const userInfo = await userClient.users.info({ user: msg.user });
-                    return {
-                        ...msg,
-                        user_name: userInfo.user.real_name || userInfo.user.name
-                    };
-                } catch (error) {
-                    return {
-                        ...msg,
-                        user_name: msg.user
-                    };
-                }
+      result.messages.map(async (msg) => {
+        let userName = 'Unknown';
+        
+        if (msg.user) {
+          try {
+            const userInfo = await userClient.users.info({ user: msg.user });
+            userName = userInfo.user.profile?.display_name || userInfo.user.real_name || userInfo.user.name;
+          } catch (error) {
+            userName = msg.user;
+          }
+        } else {
+          userName = msg.username || 'Unknown';
+        }
+
+        // Replace user mentions in message text with usernames
+        let messageText = msg.text || '';
+        if (messageText.includes('<@')) {
+          const userMentions = messageText.match(/<@([A-Z0-9]+)>/g);
+          if (userMentions) {
+            for (const mention of userMentions) {
+              const userId = mention.match(/<@([A-Z0-9]+)>/)[1];
+              try {
+                const mentionedUserInfo = await userClient.users.info({ user: userId });
+                const mentionedName = mentionedUserInfo.user.profile?.display_name || 
+                                     mentionedUserInfo.user.real_name || 
+                                     mentionedUserInfo.user.name;
+                messageText = messageText.replace(mention, `@${mentionedName}`);
+              } catch (error) {
+                // Keep original if user info fetch fails
+                messageText = messageText.replace(mention, `@${userId}`);
+              }
             }
-            return {
-                ...msg,
-                user_name: msg.username || 'Unknown'
-            };
-        })
+          }
+        }
+
+        // Check if message has files/images
+        const hasImages = msg.files && msg.files.length > 0 && 
+                         msg.files.some(f => f.mimetype?.startsWith('image/'));
+        
+        const imageFiles = hasImages ? msg.files.filter(f => f.mimetype?.startsWith('image/')) : [];
+
+        return {
+          ...msg,
+          text: messageText,
+          user_name: userName,
+          has_images: hasImages,
+          image_files: imageFiles
+        };
+      })
     );
 
+    logInfo(`Loaded ${messagesWithNames.length} messages from channel ${channelId}`);
     return messagesWithNames;
+  } catch (error) {
+    logError(`Failed to load messages from channel ${channelId}`, error);
+    throw error;
+  }
 }
+
 
 export async function getUserChannels(userToken) {
     const client = makeUserClient(userToken);
@@ -78,6 +133,32 @@ export async function getUserName(userToken, userId) {
     const client = makeUserClient(userToken);
     const res = await client.users.info({user: userId});
     return (res.user && (res.user.real_name || res.user.name)) || "Unknown";
+}
+
+export async function joinChannel(channelName) {
+    if (!userClient) {
+        throw new Error('User client not initialized');
+    }
+
+    try {
+        // Remove # prefix if user included it
+        const cleanChannelName = channelName.startsWith('#') ? channelName.slice(1) : channelName;
+        
+        // Join the channel
+        const result = await userClient.conversations.join({
+            channel: cleanChannelName
+        });
+        
+        return {
+            success: true,
+            channel: result.channel
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: error.message
+        };
+    }
 }
 
 export async function loadUserChannels() {

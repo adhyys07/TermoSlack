@@ -1,28 +1,18 @@
 {
   "name": "termoslack",
   "version": "1.0.0",
-  "main": "main.js",
+  "description": "Terminal-based Slack OAuth + Web/RTM client",
   "type": "module",
+  "main": "bootstrap.cjs",
   "bin": {
-    "termoslack": "./bootstrap.cjs"
+    "termoslack": "bootstrap.cjs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build:exe": "npx pkg . --targets node18-win-x64 --output termoslack.exe"
+    "start": "node bootstrap.cjs",
+    "build": "node build.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/adhyys07/TermoSlack.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/adhyys07/TermoSlack/issues"
-  },
-  "homepage": "https://github.com/adhyys07/TermoSlack#readme",
-  "description": "",
   "dependencies": {
+    "@ngrok/ngrok": "^1.6.0",
     "@slack/rtm-api": "^7.0.4",
     "@slack/socket-mode": "^2.0.5",
     "@slack/web-api": "^7.12.0",
@@ -34,19 +24,10 @@
     "log": "^6.3.2",
     "neo-blessed": "^0.2.0",
     "node-emoji": "^2.2.0",
+    "node-fetch": "^2.7.0",
     "open": "^10.2.0",
-    "readline": "^1.3.0"
-  },
-  "pkg": {
-    "scripts": "src/**/*.js",
-    "assets": [
-      "node_modules/**/*",
-      ".env"
-    ],
-    "targets": [
-      "node20-win-x64"
-    ],
-    "outputPath": "dist"
+    "readline": "^1.3.0",
+    "terminal-image": "^4.1.0"
   },
   "devDependencies": {
     "caxa": "^3.0.1"

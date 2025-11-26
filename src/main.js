@@ -1,5 +1,5 @@
-import { createUI, setChannels } from './ui.js';
-import { createAuthServer } from './auth_server.js';
+import { createUI, setChannels, setReloadChannelsCallback } from './ui.js';
+import { createAuthServer, getAuthUrl } from './auth_server.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -35,42 +35,63 @@ async function main() {
   logInfo(`Runtime directory: ${runtimeDir}`);
 
   let currentUserSession = null;
-  
-  // Create UI first
-  createUI();
+  let uiCreated = false;
+  let authCheckInterval = null;
 
-  // OAuth callback handler
-  const auth = createAuthServer(async (oauthResult) => {
-    logInfo('OAuth callback received');
-    
-    if (!oauthResult.userToken || !oauthResult.teamId || !oauthResult.userId) {
-      logError('OAuth success but missing required fields');
-      return;
+  // Function to create UI and load channels
+  async function initializeApp() {
+    if (!uiCreated) {
+      createUI();
+      setReloadChannelsCallback(loadUserChannels);
+      uiCreated = true;
     }
-
-    const teamName = (oauthResult.result && oauthResult.result.team && oauthResult.result.team.name) || "(unknown)";
-    logInfo(`User authenticated: ${oauthResult.userId} in workspace ${teamName}`);
-    
-    saveSession(oauthResult.teamId, oauthResult.userId, { 
-      userToken: oauthResult.userToken, 
-      teamName 
-    });
-    
-    // Initialize user client
-    initUserClient(oauthResult.userToken);
-    currentUserSession = {
-      userToken: oauthResult.userToken,
-      teamId: oauthResult.teamId,
-      userId: oauthResult.userId,
-      teamName
-    };
-
-    // Load user's channels
     await loadUserChannels();
-    logInfo('User authenticated and channels loaded');
-  });
+    
+    // Stop checking for auth once initialized
+    if (authCheckInterval) {
+      clearInterval(authCheckInterval);
+      authCheckInterval = null;
+    }
+  }
 
-  console.log(`\nTo authenticate, open: ${auth.loginUrl()}\n`);
+  let authServer = null;
+
+  // Function to start auth server
+  function startAuthServer() {
+    if (authServer) return; // Already running
+    
+    authServer = createAuthServer(async (oauthResult) => {
+      logInfo('OAuth callback received');
+      
+      if (!oauthResult.userToken || !oauthResult.teamId || !oauthResult.userId) {
+        logError('OAuth success but missing required fields');
+        return;
+      }
+
+      const teamName = (oauthResult.result && oauthResult.result.team && oauthResult.result.team.name) || "(unknown)";
+      logInfo(`User authenticated: ${oauthResult.userId} in workspace ${teamName}`);
+      
+      saveSession(oauthResult.teamId, oauthResult.userId, { 
+        userToken: oauthResult.userToken, 
+        teamName 
+      });
+      
+      // Initialize user client
+      initUserClient(oauthResult.userToken);
+      currentUserSession = {
+        userToken: oauthResult.userToken,
+        teamId: oauthResult.teamId,
+        userId: oauthResult.userId,
+        teamName
+      };
+
+      console.log('\n✓ Authentication successful! Loading TermoSlack...\n');
+      await initializeApp();
+      logInfo('User authenticated and channels loaded');
+    });
+  }
+
+  console.log('\n=== TermoSlack ===');
 
   // Check for existing session
   const sessionList = listSessions();
@@ -88,20 +109,47 @@ async function main() {
         currentUserSession.userId = userId;
         currentUserSession.teamId = teamId;
 
-        // Load channels and start UI
-        await loadUserChannels();
+        console.log('✓ Session found! Loading TermoSlack...\n');
+        await initializeApp();
         logInfo('Session restored and channels loaded');
+        return; // Exit - don't start auth server
       } catch (e) {
         logWarn('Saved session is invalid or expired');
         logError('Session restore error', e);
-        console.log(`Saved session is invalid or expired. Please re-authenticate.`);
-        console.log(`OAuth URL: ${auth.loginUrl()}`);
+        console.log('✗ Saved session is invalid or expired.');
       }
     }
-  } else {
-    logInfo('No saved sessions found');
-    console.log("No saved sessions found. Please authenticate using the URL above.");
   }
+  
+  // If we get here, we need authentication
+  console.log(`To authenticate, open: ${getAuthUrl()}\n`);
+  console.log('Waiting for authentication...\n');
+  startAuthServer();
+  
+  // Start checking for new sessions periodically
+  authCheckInterval = setInterval(async () => {
+    const newSessionList = listSessions();
+    if (newSessionList.length > 0) {
+      const newSessionKey = newSessionList[0];
+      const [newTeamId, newUserId] = newSessionKey.split('_');
+      const newSession = loadSession(newTeamId, newUserId);
+      
+      if (newSession && newSession.userToken && !uiCreated) {
+        try {
+          initUserClient(newSession.userToken);
+          currentUserSession = newSession;
+          currentUserSession.userId = newUserId;
+          currentUserSession.teamId = newTeamId;
+          
+          console.log('\n✓ Authentication successful! Loading TermoSlack...\n');
+          await initializeApp();
+          logInfo('New session detected and loaded');
+        } catch (err) {
+          logError('Failed to initialize with new session', err);
+        }
+      }
+    }
+  }, 2000); // Check every 2 seconds
 
   // Load user's channels
   async function loadUserChannels() {
@@ -188,6 +236,13 @@ async function main() {
       console.error(`Failed to load channels: ${e.message}`);
     }
   }
+  
+  // Export reload function for UI to use after joining channels
+  global.reloadChannels = loadUserChannels;
 }
 
-main();
+main().catch(err => {
+  logError('Main function error', err);
+  console.error('Fatal error:', err);
+  process.exit(1);
+});

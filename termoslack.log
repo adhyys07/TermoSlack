@@ -193,3 +193,311 @@
 [2025-11-23T16:55:53.718Z] [INFO] Switched to channel Flavorpheus (D09RH7KLXTL)
 [2025-11-23T16:55:54.802Z] [INFO] Switched to channel felix (D09T41BRGLE)
 [2025-11-23T16:55:57.516Z] [INFO] Switched to channel Alex Van Doren (D09PK3KNXGR)
+[2025-11-23T17:27:39.075Z] [INFO] TermoSlack starting...
+[2025-11-23T17:27:39.076Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T17:27:39.131Z] [INFO] Found 1 saved session(s)
+[2025-11-23T17:27:39.132Z] [INFO] Attempting to restore session
+[2025-11-23T17:27:39.135Z] [INFO] Loading channels
+[2025-11-23T17:27:39.790Z] [INFO] Found 294 DMs, showing top 25 recent
+[2025-11-23T17:27:39.858Z] [INFO] Loaded 172 channels/DMs
+[2025-11-23T17:27:39.864Z] [INFO] Session restored and channels loaded
+[2025-11-23T17:27:42.815Z] [INFO] DM user names loaded
+[2025-11-23T17:29:57.623Z] [INFO] TermoSlack starting...
+[2025-11-23T17:29:57.624Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-23T17:29:57.686Z] [INFO] Found 1 saved session(s)
+[2025-11-23T17:29:57.687Z] [INFO] Attempting to restore session
+[2025-11-23T17:29:57.690Z] [INFO] Loading channels
+[2025-11-23T17:29:58.317Z] [INFO] Found 294 DMs, showing top 25 recent
+[2025-11-23T17:29:58.363Z] [INFO] Loaded 172 channels/DMs
+[2025-11-23T17:29:58.369Z] [INFO] Session restored and channels loaded
+[2025-11-23T17:30:01.346Z] [INFO] DM user names loaded
+[2025-11-23T17:30:19.944Z] [INFO] Switched to channel gork (D09QAM4JPE3)
+[2025-11-23T17:30:24.401Z] [INFO] Switched to channel aram (D09UBM2QPNU)
+[2025-11-23T17:30:26.580Z] [INFO] Switched to channel money laundering manager (D09UNLSFSNM)
+[2025-11-23T17:30:27.799Z] [INFO] Switched to channel money laundering manager (D09UNLSFSNM)
+[2025-11-23T17:30:29.548Z] [INFO] Switched to channel money laundering manager (D09UNLSFSNM)
+[2025-11-24T17:03:32.517Z] [INFO] TermoSlack starting...
+[2025-11-24T17:03:32.524Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-24T17:03:32.594Z] [INFO] Found 1 saved session(s)
+[2025-11-24T17:03:32.596Z] [INFO] Attempting to restore session
+[2025-11-24T17:03:32.600Z] [INFO] Loading channels
+[2025-11-24T17:03:33.068Z] [ERROR] Failed to load channels
+  Error: An API error occurred: org_login_required
+  Stack: Error: An API error occurred: org_login_required
+    at platformErrorFromResult (E:\TermoSlack\node_modules\@slack\web-api\dist\errors.js:67:33)
+    at WebClient.<anonymous> (E:\TermoSlack\node_modules\@slack\web-api\dist\WebClient.js:242:60)
+    at Generator.next (<anonymous>)
+    at fulfilled (E:\TermoSlack\node_modules\@slack\web-api\dist\WebClient.js:38:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2025-11-24T17:03:33.069Z] [INFO] Session restored and channels loaded
+[2025-11-26T12:43:35.739Z] [INFO] TermoSlack starting...
+[2025-11-26T12:43:35.741Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T12:43:35.807Z] [INFO] Found 1 saved session(s)
+[2025-11-26T12:43:35.808Z] [INFO] Attempting to restore session
+[2025-11-26T12:43:35.811Z] [INFO] Loading channels
+[2025-11-26T12:43:36.659Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-26T12:43:36.716Z] [INFO] Loaded 172 channels/DMs
+[2025-11-26T12:43:36.723Z] [INFO] Session restored and channels loaded
+[2025-11-26T12:43:39.902Z] [INFO] DM user names loaded
+[2025-11-26T12:43:45.777Z] [INFO] Switched to channel alex-containment-chamber (C0799LEA75X)
+[2025-11-26T12:43:53.176Z] [INFO] Switched to channel campfire (C09PXLPEL2Y)
+[2025-11-26T12:44:04.727Z] [INFO] Message sent to channel C09PXLPEL2Y
+[2025-11-26T12:44:05.770Z] [INFO] Switched to channel campfire (C09PXLPEL2Y)
+[2025-11-26T15:42:00.061Z] [INFO] Created image cache directory 
+[2025-11-26T15:42:00.380Z] [INFO] TermoSlack starting...
+[2025-11-26T15:42:00.380Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T15:42:00.458Z] [INFO] Found 1 saved session(s)
+[2025-11-26T15:42:00.459Z] [INFO] Attempting to restore session
+[2025-11-26T15:42:00.463Z] [INFO] Loading channels
+[2025-11-26T15:42:01.492Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-26T15:42:01.585Z] [INFO] Loaded 172 channels/DMs
+[2025-11-26T15:42:01.595Z] [INFO] Session restored and channels loaded
+[2025-11-26T15:42:04.690Z] [INFO] DM user names loaded
+[2025-11-26T15:42:15.035Z] [INFO] Loaded 20 messages from channel C09EQ4YNPM2
+[2025-11-26T15:42:15.091Z] [INFO] Switched to channel alleyway (C09EQ4YNPM2)
+[2025-11-26T15:42:15.349Z] [INFO] Loaded 20 messages from channel C09EQ4YNPM2
+[2025-11-26T15:42:15.361Z] [INFO] Switched to channel alleyway (C09EQ4YNPM2)
+[2025-11-26T15:42:15.408Z] [INFO] Loaded 20 messages from channel C09EQ4YNPM2
+[2025-11-26T15:42:15.417Z] [INFO] Switched to channel alleyway (C09EQ4YNPM2)
+[2025-11-26T15:42:17.486Z] [INFO] Loaded 20 messages from channel C03QPB0SU3V
+[2025-11-26T15:42:17.493Z] [INFO] Switched to channel amas (C03QPB0SU3V)
+[2025-11-26T15:42:21.114Z] [INFO] Loaded 20 messages from channel C09EF889S8J
+[2025-11-26T15:42:21.121Z] [INFO] Switched to channel ask-the-fraud-team (C09EF889S8J)
+[2025-11-26T15:42:35.117Z] [INFO] Loaded 20 messages from channel C09MATJJZ5J
+[2025-11-26T15:42:35.125Z] [INFO] Switched to channel flavortown-bulletin (C09MATJJZ5J)
+[2025-11-26T17:41:01.982Z] [INFO] TermoSlack starting...
+[2025-11-26T17:41:01.988Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T17:41:02.067Z] [INFO] Found 1 saved session(s)
+[2025-11-26T17:41:02.068Z] [INFO] Attempting to restore session
+[2025-11-26T17:41:02.072Z] [INFO] Loading channels
+[2025-11-26T17:41:02.862Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-26T17:41:02.916Z] [INFO] Loaded 172 channels/DMs
+[2025-11-26T17:41:02.924Z] [INFO] Session restored and channels loaded
+[2025-11-26T17:41:05.969Z] [INFO] DM user names loaded
+[2025-11-26T17:41:18.264Z] [INFO] Loaded 20 messages from channel C0C78SG9L
+[2025-11-26T17:41:18.310Z] [INFO] Switched to channel hq (C0C78SG9L)
+[2025-11-26T17:41:26.547Z] [INFO] Downloading image: https://files.slack.com/files-pri/T09V59WQY1E-F09VC2J8D1C/image.png
+[2025-11-26T17:41:27.912Z] [INFO] Cached image to: 8dbfed0073f510271e34e7a194adf8aa
+[2025-11-26T17:42:52.187Z] [INFO] TermoSlack starting...
+[2025-11-26T17:42:52.189Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T17:42:52.258Z] [INFO] Found 1 saved session(s)
+[2025-11-26T17:42:52.259Z] [INFO] Attempting to restore session
+[2025-11-26T17:42:52.262Z] [INFO] Loading channels
+[2025-11-26T17:42:53.160Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-26T17:42:53.207Z] [INFO] Loaded 172 channels/DMs
+[2025-11-26T17:42:53.213Z] [INFO] Session restored and channels loaded
+[2025-11-26T17:42:56.290Z] [INFO] DM user names loaded
+[2025-11-26T17:42:58.917Z] [INFO] Loaded 20 messages from channel C09TH3L18MA
+[2025-11-26T17:42:58.931Z] [INFO] Switched to channel campfire-delhi (C09TH3L18MA)
+[2025-11-26T17:43:12.708Z] [INFO] Loaded 20 messages from channel C09RG1JG996
+[2025-11-26T17:43:12.717Z] [INFO] Switched to channel christmas-ysws (C09RG1JG996)
+[2025-11-26T17:43:15.695Z] [INFO] Loaded 20 messages from channel C073DTGENJ2
+[2025-11-26T17:43:15.702Z] [INFO] Switched to channel cider (C073DTGENJ2)
+[2025-11-26T17:43:21.437Z] [INFO] Loaded 20 messages from channel C05SVRTCDGV
+[2025-11-26T17:43:21.445Z] [INFO] Switched to channel hq-engineering (C05SVRTCDGV)
+[2025-11-26T17:44:40.624Z] [INFO] TermoSlack starting...
+[2025-11-26T17:44:40.634Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T17:44:40.698Z] [INFO] Found 1 saved session(s)
+[2025-11-26T17:44:40.699Z] [INFO] Attempting to restore session
+[2025-11-26T17:44:40.702Z] [INFO] Loading channels
+[2025-11-26T17:44:41.492Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-26T17:44:41.543Z] [INFO] Loaded 172 channels/DMs
+[2025-11-26T17:44:41.549Z] [INFO] Session restored and channels loaded
+[2025-11-26T17:44:44.529Z] [INFO] DM user names loaded
+[2025-11-26T17:44:48.845Z] [INFO] Loaded 20 messages from channel C09TH3L18MA
+[2025-11-26T17:44:48.863Z] [INFO] Switched to channel campfire-delhi (C09TH3L18MA)
+[2025-11-26T17:46:55.853Z] [INFO] TermoSlack starting...
+[2025-11-26T17:46:55.855Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T17:46:55.919Z] [INFO] Found 1 saved session(s)
+[2025-11-26T17:46:55.920Z] [INFO] Attempting to restore session
+[2025-11-26T17:46:55.923Z] [INFO] Loading channels
+[2025-11-26T17:46:57.025Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-26T17:46:57.072Z] [INFO] Loaded 172 channels/DMs
+[2025-11-26T17:46:57.089Z] [INFO] Session restored and channels loaded
+[2025-11-26T17:47:00.124Z] [INFO] Loaded 20 messages from channel C08KV16A0Q5
+[2025-11-26T17:47:00.137Z] [INFO] Switched to channel blend-pvt (C08KV16A0Q5)
+[2025-11-26T17:47:00.332Z] [INFO] DM user names loaded
+[2025-11-26T17:47:03.323Z] [INFO] Loaded 20 messages from channel C09AT8ZHYDV
+[2025-11-26T17:47:03.334Z] [INFO] Switched to channel bunbougu-ysws (C09AT8ZHYDV)
+[2025-11-26T17:47:12.439Z] [INFO] Loaded 20 messages from channel C01FXNNF6F2
+[2025-11-26T17:47:12.446Z] [INFO] Switched to channel zrl-land (C01FXNNF6F2)
+[2025-11-26T18:33:39.536Z] [INFO] TermoSlack starting...
+[2025-11-26T18:33:39.542Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T18:33:39.630Z] [INFO] No saved sessions found
+[2025-11-26T18:36:28.588Z] [INFO] TermoSlack starting...
+[2025-11-26T18:36:28.593Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T18:36:28.599Z] [INFO] No saved sessions found
+[2025-11-26T18:37:10.676Z] [INFO] OAuth callback received
+[2025-11-26T18:37:10.677Z] [INFO] User authenticated: U082UPTRQU8 in workspace Hack Club
+[2025-11-26T18:37:10.680Z] [INFO] Loading channels
+[2025-11-26T18:37:11.340Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-26T18:37:11.369Z] [INFO] Loaded 172 channels/DMs
+[2025-11-26T18:37:11.379Z] [INFO] User authenticated and channels loaded
+[2025-11-26T18:37:14.611Z] [INFO] DM user names loaded
+[2025-11-26T18:37:17.580Z] [INFO] TermoSlack starting...
+[2025-11-26T18:37:17.584Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T18:37:17.591Z] [INFO] Found 1 saved session(s)
+[2025-11-26T18:37:17.592Z] [INFO] Attempting to restore session
+[2025-11-26T18:37:17.659Z] [INFO] Loading channels
+[2025-11-26T18:37:18.444Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-26T18:37:18.507Z] [INFO] Loaded 172 channels/DMs
+[2025-11-26T18:37:18.515Z] [INFO] Session restored and channels loaded
+[2025-11-26T18:44:27.664Z] [INFO] OAuth callback received
+[2025-11-26T18:44:27.665Z] [INFO] User authenticated: U082UPTRQU8 in workspace Hack Club
+[2025-11-26T18:44:27.670Z] [INFO] Loading channels
+[2025-11-26T18:44:28.335Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-26T18:44:28.373Z] [INFO] Loaded 172 channels/DMs
+[2025-11-26T18:44:28.385Z] [INFO] User authenticated and channels loaded
+[2025-11-26T18:44:31.872Z] [INFO] DM user names loaded
+[2025-11-26T19:39:18.662Z] [INFO] TermoSlack starting...
+[2025-11-26T19:39:18.664Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:39:18.669Z] [INFO] Local server running on port 3000
+[2025-11-26T19:39:18.671Z] [FATAL] Unhandled promise rejection
+  Error: auth.loginUrl is not a function
+  Stack: TypeError: auth.loginUrl is not a function
+    at main (file:///E:/TermoSlack/src/main.js:89:46)
+    at file:///E:/TermoSlack/src/main.js:264:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:271:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:578:26)
+    at async E:\TermoSlack\bootstrap.cjs:28:24
+[2025-11-26T19:39:19.167Z] [ERROR] Failed to start ngrok tunnel
+  Error: failed to connect session: The authtoken you specified does not look like a proper ngrok authtoken.
+Your authtoken: npm install @ngrok/ngrok
+Instructions to install your authtoken are on your ngrok dashboard:
+https://dashboard.ngrok.com/get-started/your-authtoken error_code: ERR_NGROK_105
+  Stack: Error: failed to connect session: The authtoken you specified does not look like a proper ngrok authtoken.
+Your authtoken: npm install @ngrok/ngrok
+Instructions to install your authtoken are on your ngrok dashboard:
+https://dashboard.ngrok.com/get-started/your-authtoken error_code: ERR_NGROK_105
+[2025-11-26T19:42:36.205Z] [INFO] TermoSlack starting...
+[2025-11-26T19:42:36.207Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:42:36.210Z] [INFO] No saved sessions found
+[2025-11-26T19:42:36.211Z] [INFO] Local server running on port 3000
+[2025-11-26T19:42:36.706Z] [ERROR] Failed to start ngrok tunnel
+  Error: failed to connect session: The authtoken you specified does not look like a proper ngrok authtoken.
+Your authtoken: npm install @ngrok/ngrok
+Instructions to install your authtoken are on your ngrok dashboard:
+https://dashboard.ngrok.com/get-started/your-authtoken error_code: ERR_NGROK_105
+  Stack: Error: failed to connect session: The authtoken you specified does not look like a proper ngrok authtoken.
+Your authtoken: npm install @ngrok/ngrok
+Instructions to install your authtoken are on your ngrok dashboard:
+https://dashboard.ngrok.com/get-started/your-authtoken error_code: ERR_NGROK_105
+[2025-11-26T19:45:01.372Z] [INFO] TermoSlack starting...
+[2025-11-26T19:45:01.374Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:45:01.378Z] [INFO] No saved sessions found
+[2025-11-26T19:45:01.381Z] [INFO] Local server running on port 3000
+[2025-11-26T19:45:02.441Z] [INFO] ngrok tunnel established at https://termoslack.ngrok.app
+[2025-11-26T19:46:46.974Z] [INFO] TermoSlack starting...
+[2025-11-26T19:46:46.976Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:46:46.980Z] [INFO] No saved sessions found
+[2025-11-26T19:46:46.981Z] [INFO] Local server running on port 3000
+[2025-11-26T19:46:47.778Z] [ERROR] Failed to start ngrok tunnel
+  Error: failed to start listener: The endpoint 'https://termoslack.ngrok.app' is already online. Either
+1. stop your existing endpoint first, or
+2. start both endpoints with `--pooling-enabled` to load balance between them. error_code: ERR_NGROK_334
+  Stack: Error: failed to start listener: The endpoint 'https://termoslack.ngrok.app' is already online. Either
+1. stop your existing endpoint first, or
+2. start both endpoints with `--pooling-enabled` to load balance between them. error_code: ERR_NGROK_334
+[2025-11-26T19:47:25.825Z] [INFO] TermoSlack starting...
+[2025-11-26T19:47:25.827Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:47:25.831Z] [INFO] No saved sessions found
+[2025-11-26T19:47:25.832Z] [INFO] Local server running on port 3000
+[2025-11-26T19:47:26.607Z] [INFO] ngrok tunnel established at https://termoslack.ngrok.app
+[2025-11-26T19:49:13.474Z] [INFO] TermoSlack starting...
+[2025-11-26T19:49:13.475Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:49:13.479Z] [INFO] No saved sessions found
+[2025-11-26T19:49:13.481Z] [INFO] Local server running on port 3000
+[2025-11-26T19:49:14.577Z] [INFO] ngrok tunnel established at https://termoslack.ngrok.app
+[2025-11-26T19:50:52.388Z] [INFO] TermoSlack starting...
+[2025-11-26T19:50:52.389Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:50:52.394Z] [INFO] No saved sessions found
+[2025-11-26T19:50:52.396Z] [INFO] Local server running on port 3000
+[2025-11-26T19:50:53.294Z] [ERROR] Failed to start ngrok tunnel
+  Error: failed to start listener: The endpoint 'https://termoslack.ngrok.app' is already online. Either
+1. stop your existing endpoint first, or
+2. start both endpoints with `--pooling-enabled` to load balance between them. error_code: ERR_NGROK_334
+  Stack: Error: failed to start listener: The endpoint 'https://termoslack.ngrok.app' is already online. Either
+1. stop your existing endpoint first, or
+2. start both endpoints with `--pooling-enabled` to load balance between them. error_code: ERR_NGROK_334
+[2025-11-26T19:51:28.816Z] [INFO] TermoSlack starting...
+[2025-11-26T19:51:28.818Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:51:28.831Z] [INFO] No saved sessions found
+[2025-11-26T19:51:28.833Z] [INFO] Local server running on port 3000
+[2025-11-26T19:51:29.653Z] [INFO] ngrok tunnel established at https://termoslack.ngrok.app
+[2025-11-26T19:51:30.472Z] [INFO] Redirecting to Slack OAuth
+[2025-11-26T19:52:42.720Z] [INFO] TermoSlack starting...
+[2025-11-26T19:52:42.721Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:52:42.727Z] [INFO] No saved sessions found
+[2025-11-26T19:52:42.729Z] [INFO] Local server running on port 3000
+[2025-11-26T19:52:43.702Z] [INFO] ngrok tunnel established at https://termoslack.ngrok.app
+[2025-11-26T19:52:44.674Z] [INFO] Redirecting to Slack OAuth
+[2025-11-26T19:54:54.777Z] [INFO] TermoSlack starting...
+[2025-11-26T19:54:54.779Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:54:54.784Z] [INFO] No saved sessions found
+[2025-11-26T19:54:54.785Z] [INFO] Local server running on port 3000
+[2025-11-26T19:54:55.694Z] [ERROR] Failed to start ngrok tunnel
+  Error: failed to start listener: The endpoint 'https://termoslack.ngrok.app' is already online. Either
+1. stop your existing endpoint first, or
+2. start both endpoints with `--pooling-enabled` to load balance between them. error_code: ERR_NGROK_334
+  Stack: Error: failed to start listener: The endpoint 'https://termoslack.ngrok.app' is already online. Either
+1. stop your existing endpoint first, or
+2. start both endpoints with `--pooling-enabled` to load balance between them. error_code: ERR_NGROK_334
+[2025-11-26T19:55:12.967Z] [INFO] TermoSlack starting...
+[2025-11-26T19:55:12.969Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:55:12.975Z] [INFO] No saved sessions found
+[2025-11-26T19:55:12.976Z] [INFO] Local server running on port 3000
+[2025-11-26T19:55:13.877Z] [INFO] ngrok tunnel established at https://termoslack.ngrok.app
+[2025-11-26T19:55:14.619Z] [INFO] Redirecting to Slack OAuth
+[2025-11-26T19:55:22.715Z] [INFO] OAuth successful for user U082UPTRQU8
+[2025-11-26T19:55:22.717Z] [INFO] OAuth callback received
+[2025-11-26T19:55:22.718Z] [ERROR] OAuth success but missing required fields
+[2025-11-26T19:55:27.724Z] [INFO] Auth server closed after successful authentication
+[2025-11-26T19:55:35.038Z] [INFO] TermoSlack starting...
+[2025-11-26T19:55:35.040Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:55:35.045Z] [INFO] No saved sessions found
+[2025-11-26T19:55:35.046Z] [INFO] Local server running on port 3000
+[2025-11-26T19:55:36.130Z] [INFO] ngrok tunnel established at https://termoslack.ngrok.app
+[2025-11-26T19:55:36.888Z] [INFO] Redirecting to Slack OAuth
+[2025-11-26T19:55:53.591Z] [INFO] OAuth successful for user U082UPTRQU8
+[2025-11-26T19:55:53.594Z] [INFO] OAuth callback received
+[2025-11-26T19:55:53.594Z] [ERROR] OAuth success but missing required fields
+[2025-11-26T19:55:58.605Z] [INFO] Auth server closed after successful authentication
+[2025-11-26T19:58:21.546Z] [INFO] TermoSlack starting...
+[2025-11-26T19:58:27.371Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:58:27.381Z] [INFO] No saved sessions found
+[2025-11-26T19:58:27.384Z] [INFO] Local server running on port 3000
+[2025-11-26T19:58:28.180Z] [ERROR] Failed to start ngrok tunnel
+  Error: failed to start listener: The endpoint 'https://termoslack.ngrok.app' is already online. Either
+1. stop your existing endpoint first, or
+2. start both endpoints with `--pooling-enabled` to load balance between them. error_code: ERR_NGROK_334
+  Stack: Error: failed to start listener: The endpoint 'https://termoslack.ngrok.app' is already online. Either
+1. stop your existing endpoint first, or
+2. start both endpoints with `--pooling-enabled` to load balance between them. error_code: ERR_NGROK_334
+[2025-11-26T19:58:45.864Z] [INFO] TermoSlack starting...
+[2025-11-26T19:58:45.865Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T19:58:45.871Z] [INFO] No saved sessions found
+[2025-11-26T19:58:45.873Z] [INFO] Local server running on port 3000
+[2025-11-26T19:58:46.770Z] [INFO] ngrok tunnel established at https://termoslack.ngrok.app
+[2025-11-26T19:58:47.549Z] [INFO] Redirecting to Slack OAuth
+[2025-11-26T19:58:55.067Z] [INFO] OAuth successful for user U082UPTRQU8
+[2025-11-26T19:58:55.070Z] [INFO] OAuth callback received
+[2025-11-26T19:58:55.070Z] [INFO] User authenticated: U082UPTRQU8 in workspace Hack Club
+[2025-11-26T19:58:55.171Z] [INFO] Loading channels
+[2025-11-26T19:58:55.843Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-26T19:58:55.925Z] [INFO] Loaded 172 channels/DMs
+[2025-11-26T19:58:55.952Z] [INFO] User authenticated and channels loaded
+[2025-11-26T19:58:58.964Z] [INFO] DM user names loaded
+[2025-11-26T19:59:00.179Z] [INFO] Auth server closed after successful authentication
+[2025-11-26T20:41:15.540Z] [INFO] TermoSlack starting...
+[2025-11-26T20:41:15.542Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-26T20:41:15.544Z] [INFO] Found 1 saved session(s)
+[2025-11-26T20:41:15.546Z] [INFO] Attempting to restore session
+[2025-11-26T20:41:15.699Z] [INFO] Loading channels
+[2025-11-26T20:41:16.603Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-26T20:41:16.660Z] [INFO] Loaded 172 channels/DMs
+[2025-11-26T20:41:16.697Z] [INFO] Session restored and channels loaded
+[2025-11-26T20:41:19.728Z] [INFO] DM user names loaded
+[2025-11-26T20:41:32.216Z] [INFO] Loaded 20 messages from channel C08Q1H6D79B
+[2025-11-26T20:41:32.271Z] [INFO] Switched to channel highway (C08Q1H6D79B)
+[2025-11-26T20:41:34.945Z] [INFO] Downloading image: https://files.slack.com/files-pri/T09V59WQY1E-F09UCKN9BCP/download/image.png
+[2025-11-26T20:41:38.797Z] [INFO] Cached image to: d4781a001fb9914d4251c2d93641e92e
