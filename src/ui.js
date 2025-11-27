@@ -4,7 +4,7 @@ import { logInfo, logError } from './logger.js';
 import { getCachedImage } from './image_cache.js';
 
 let screen, channelList, chatBox, input, header, statusBar, navbar, channelsBtn, dmsBtn, searchBox, joinBox, imageViewer, suggestionsBox;
-let globalSearchBox, searchResultsBox, threadBox;
+let globalSearchBox, searchResultsBox, threadBox, userSearchBox, userSuggestionsBox;
 let channels = [];
 let currentChannelId = null;
 let currentView = 'channels'; // 'channels' or 'dms'
@@ -13,9 +13,11 @@ let searchQuery = '';
 let joinMode = false;
 let globalSearchMode = false;
 let threadMode = false;
+let userSearchMode = false;
 let messages=[];
 let selectedMessageIndex=-1;
 let allPublicChannels = [];
+let allUsers = [];
 let selectedSuggestion = 0;
 let searchResults = [];
 let searchPage = 1;
@@ -154,7 +156,7 @@ export function createUI() {
     left: '33%',
     width: '34%',
     height: 3,
-    content: '{center}[F2] DMs | [Enter] Chat | [Ctrl+S] Search | [T] Thread{/center}',
+    content: '{center}[F2] DMs | [Enter] Chat | [Ctrl+D] DM User | [T] Thread{/center}',
     tags: true,
     style:{
       fg: 'white',
@@ -244,6 +246,54 @@ export function createUI() {
     }
   });
 
+  // User Search Box (hidden by default)
+  userSearchBox = blessed.textbox({
+    top: 3,
+    left: 0,
+    width: '25%',
+    height: 3,
+    label: ' Search User to DM (Esc to cancel) ',
+    inputOnFocus: true,
+    hidden: true,
+    style:{
+      fg: 'white',
+      bg: 'black',
+      border:{
+        fg:'magenta'
+      }
+    },
+    border: {
+      type: 'line'
+    }
+  });
+
+  // User Suggestions Box (hidden by default)
+  userSuggestionsBox = blessed.list({
+    top: 6,
+    left: 0,
+    width: '25%',
+    height: 10,
+    label: ' Users ',
+    hidden: true,
+    keys: true,
+    vi: true,
+    tags: true,
+    style: {
+      fg: 'white',
+      bg: 'black',
+      selected: {
+        fg: 'black',
+        bg: 'magenta'
+      },
+      border: {
+        fg: 'magenta'
+      }
+    },
+    border: {
+      type: 'line'
+    }
+  });
+
   imageViewer = blessed.box({
     top: 'center',
     left: 'center',
@@ -279,6 +329,8 @@ export function createUI() {
   screen.append(statusBar);
   screen.append(joinBox);
   screen.append(suggestionsBox);
+  screen.append(userSearchBox);
+  screen.append(userSuggestionsBox);
 
   // Global Search Box (hidden by default)
   globalSearchBox = blessed.textbox({
@@ -416,7 +468,7 @@ export function createUI() {
       chatBox.focus();
       // Initialize selected message when focusing chat
       if (messages.length > 0 && selectedMessageIndex === -1) {
-        selectedMessageIndex = 0; // Select most recent (bottom)
+        selectedMessageIndex = messages.length - 1; // Select most recent (bottom)
         displayMessages(messages);
       }
       screen.render();
@@ -426,18 +478,30 @@ export function createUI() {
   // Arrow keys for scrolling messages
   screen.key(['up'], () => {
     if (chatBox.focused && messages.length > 0) {
-      if (selectedMessageIndex < messages.length - 1) {
-        selectedMessageIndex++;
+      // UP = go to older messages (decrease index, move up visually)
+      if (selectedMessageIndex > 0) {
+        selectedMessageIndex--;
         displayMessages(messages);
+        const msg = messages[selectedMessageIndex];
+        const username = msg.user_name || msg.username || 'Unknown';
+        const msgNum = selectedMessageIndex + 1;
+        statusBar.setContent(` Status: Message ${msgNum}/${messages.length} - ${username}`);
+        screen.render();
       }
     }
   });
 
   screen.key(['down'], () => {
     if (chatBox.focused && messages.length > 0) {
-      if (selectedMessageIndex > 0) {
-        selectedMessageIndex--;
+      // DOWN = go to newer messages (increase index, move down visually)
+      if (selectedMessageIndex < messages.length - 1) {
+        selectedMessageIndex++;
         displayMessages(messages);
+        const msg = messages[selectedMessageIndex];
+        const username = msg.user_name || msg.username || 'Unknown';
+        const msgNum = selectedMessageIndex + 1;
+        statusBar.setContent(` Status: Message ${msgNum}/${messages.length} - ${username}`);
+        screen.render();
       }
     }
   });
@@ -468,6 +532,35 @@ export function createUI() {
       chatBox.hide();
       searchResultsBox.hide();
       input.hide();
+      screen.render();
+    }
+  });
+
+  // Ctrl+D - DM User Search
+  screen.key(['C-d'], async () => {
+    if (!userSearchMode) {
+      userSearchMode = true;
+      userSearchBox.show();
+      userSearchBox.focus();
+      
+      // Load all users if not loaded
+      if (allUsers.length === 0) {
+        statusBar.setContent(' Status: Loading users...');
+        screen.render();
+        try {
+          const { getUserClient } = await import('./user_client.js');
+          const client = getUserClient();
+          const result = await client.users.list({
+            limit: 1000
+          });
+          allUsers = result.members.filter(u => !u.is_bot && !u.deleted && u.id !== 'USLACKBOT') || [];
+          statusBar.setContent(` Status: ${allUsers.length} users available`);
+        } catch (error) {
+          statusBar.setContent(' Status: Failed to load users');
+          logError('Failed to load users', error);
+        }
+      }
+      
       screen.render();
     }
   });
@@ -537,6 +630,12 @@ export function createUI() {
       chatBox.show();
       input.show();
       channelList.focus();
+    } else if (userSearchMode) {
+      userSearchMode = false;
+      userSearchBox.hide();
+      userSearchBox.clearValue();
+      userSuggestionsBox.hide();
+      channelList.focus();
     } else if (searchMode) {
       searchMode = false;
       searchQuery = '';
@@ -558,19 +657,47 @@ export function createUI() {
 
   // T key - View thread
   screen.key(['t'], async () => {
-    if (chatBox.focused && messages.length > 0 && selectedMessageIndex >= 0) {
-      const selectedMessage = messages[selectedMessageIndex];
-      
-      // Check if message has thread replies
-      if (selectedMessage.reply_count && selectedMessage.reply_count > 0) {
-        await viewThread(selectedMessage.ts);
-      } else if (selectedMessage.thread_ts) {
-        // Message is part of a thread
-        await viewThread(selectedMessage.thread_ts);
-      } else {
-        // Start a new thread with this message
-        await viewThread(selectedMessage.ts);
-      }
+    if (!chatBox.focused) {
+      statusBar.setContent(' Status: Focus chat area first (press Enter)');
+      screen.render();
+      return;
+    }
+    
+    if (!messages || messages.length === 0) {
+      statusBar.setContent(' Status: No messages loaded');
+      screen.render();
+      return;
+    }
+    
+    // Validate selectedMessageIndex
+    if (selectedMessageIndex < 0 || selectedMessageIndex >= messages.length) {
+      statusBar.setContent(' Status: No message selected. Use arrow keys to select a message');
+      screen.render();
+      return;
+    }
+    
+    const selectedMessage = messages[selectedMessageIndex];
+    
+    if (!selectedMessage || !selectedMessage.ts) {
+      statusBar.setContent(' Status: Invalid message selected');
+      screen.render();
+      return;
+    }
+    
+    // Show which message is being opened
+    const username = selectedMessage.user_name || selectedMessage.username || 'Unknown';
+    statusBar.setContent(` Status: Opening thread from ${username}...`);
+    screen.render();
+    
+    // Check if message has thread replies
+    if (selectedMessage.reply_count && selectedMessage.reply_count > 0) {
+      await viewThread(selectedMessage.ts);
+    } else if (selectedMessage.thread_ts) {
+      // Message is part of a thread
+      await viewThread(selectedMessage.thread_ts);
+    } else {
+      // Start a new thread with this message
+      await viewThread(selectedMessage.ts);
     }
   });
 
@@ -791,22 +918,140 @@ export function createUI() {
             await global.reloadChannels();
           }
         } else {
-          statusBar.setContent(` Status: Failed to join - ${result.error}`);
+          statusBar.setContent(` Status: Failed to join #${channelName} - ${result.error || 'Unknown error'}`);
           statusBar.style.fg = 'red';
         }
       } catch (error) {
         statusBar.setContent(` Status: Error joining channel - ${error.message}`);
         statusBar.style.fg = 'red';
+        logError(`Failed to join channel ${channelName}`, error);
       }
     }
     
+    joinBox.clearValue();
     channelList.focus();
+    screen.render();
+  });
+
+  // User search box input handler - show suggestions
+  userSearchBox.on('keypress', (ch, key) => {
+    if (key.name === 'down' && !userSuggestionsBox.hidden) {
+      userSuggestionsBox.down();
+      screen.render();
+      return;
+    }
+    if (key.name === 'up' && !userSuggestionsBox.hidden) {
+      userSuggestionsBox.up();
+      screen.render();
+      return;
+    }
+    
+    setTimeout(() => {
+      const query = userSearchBox.getValue().toLowerCase().trim();
+      
+      if (query.length > 0) {
+        const suggestions = allUsers
+          .filter(u => {
+            const name = (u.real_name || u.name || '').toLowerCase();
+            const displayName = (u.profile?.display_name || '').toLowerCase();
+            return name.includes(query) || displayName.includes(query);
+          })
+          .slice(0, 10)
+          .map(u => {
+            const displayName = u.profile?.display_name || u.real_name || u.name;
+            const status = u.profile?.status_emoji ? `${u.profile.status_emoji} ` : '';
+            return `${status}${displayName} (@${u.name})`;
+          });
+        
+        if (suggestions.length > 0) {
+          userSuggestionsBox.setItems(suggestions);
+          userSuggestionsBox.show();
+        } else {
+          userSuggestionsBox.hide();
+        }
+      } else {
+        userSuggestionsBox.hide();
+      }
+      screen.render();
+    }, 10);
+  });
+
+  // User search box submit handler
+  userSearchBox.on('submit', async (value) => {
+    let selectedUser = null;
+    
+    // If suggestions are visible and a suggestion is selected, use that
+    if (!userSuggestionsBox.hidden) {
+      const selectedItem = userSuggestionsBox.getItem(userSuggestionsBox.selected);
+      if (selectedItem) {
+        const username = selectedItem.getText().match(/@([^\)]+)\)/)?.[1];
+        if (username) {
+          selectedUser = allUsers.find(u => u.name === username);
+        }
+      }
+    }
+    
+    userSearchMode = false;
+    userSearchBox.hide();
+    userSuggestionsBox.hide();
+    
+    if (selectedUser) {
+      statusBar.setContent(` Status: Opening DM with ${selectedUser.real_name || selectedUser.name}...`);
+      screen.render();
+      
+      try {
+        const { getUserClient } = await import('./user_client.js');
+        const client = getUserClient();
+        
+        // Open a DM conversation with the user
+        const result = await client.conversations.open({
+          users: selectedUser.id
+        });
+        
+        if (result.ok && result.channel) {
+          const dmChannelId = result.channel.id;
+          
+          // Switch to DMs view
+          currentView = 'dms';
+          updateButtonStyles();
+          
+          // Reload channels to include the new DM
+          if (reloadChannelsCallback) {
+            await reloadChannelsCallback();
+          }
+          
+          // Select the DM channel
+          currentChannelId = dmChannelId;
+          const displayName = `💬 ${selectedUser.real_name || selectedUser.name}`;
+          chatBox.setLabel(` Messages - ${displayName} `);
+          
+          const msgs = await loadMessages(dmChannelId);
+          messages = msgs;
+          displayMessages(msgs);
+          
+          statusBar.setContent(` Status: DM opened with ${selectedUser.real_name || selectedUser.name} ✓`);
+          statusBar.style.fg = 'green';
+          
+          input.focus();
+        } else {
+          statusBar.setContent(` Status: Failed to open DM`);
+          statusBar.style.fg = 'red';
+        }
+      } catch (error) {
+        statusBar.setContent(` Status: Error opening DM - ${error.message}`);
+        statusBar.style.fg = 'red';
+        logError('Failed to open DM', error);
+      }
+    }
+    
+    userSearchBox.clearValue();
     screen.render();
   });
 
   joinBox.on('cancel', () => {
     joinMode = false;
     joinBox.hide();
+    suggestionsBox.hide();
     channelList.focus();
     screen.render();
   });
@@ -1003,16 +1248,21 @@ function displayMessages(msgs) {
     return;
   }
 
-  // Store messages in reverse order (newest first for display)
-  messages = [...msgs].reverse();
+  // Store messages - keep original order (oldest first)
+  messages = [...msgs];
   
-  // Initialize selected message to the most recent (bottom)
-  if (selectedMessageIndex === -1 || selectedMessageIndex >= messages.length) {
-    selectedMessageIndex = 0;
+  // Validate and initialize selected message
+  if (selectedMessageIndex === -1) {
+    // First time - select newest message (last in array)
+    selectedMessageIndex = messages.length - 1;
+  } else if (selectedMessageIndex >= messages.length) {
+    // Messages changed, adjust to newest
+    selectedMessageIndex = messages.length - 1;
   }
+  // If selectedMessageIndex is valid (0 to length-1), keep it
 
   const boxWidth = chatBox.width - 4; // Account for borders and padding
-  const contentWidth = boxWidth - 5; // Leave space for box characters and padding
+  const contentWidth = Math.max(50, boxWidth - 5); // Minimum width 50, leave space for box characters
 
   const formattedMessages = messages.map((msg, index) => {
     const timestamp = new Date(parseFloat(msg.ts) * 1000).toLocaleString();
@@ -1050,13 +1300,15 @@ function displayMessages(msgs) {
   chatBox.setContent(formattedMessages);
   
   // Scroll to keep selected message visible
-  if (selectedMessageIndex === 0) {
+  if (selectedMessageIndex === messages.length - 1) {
     // Most recent message - scroll to bottom
     chatBox.setScrollPerc(100);
+  } else if (selectedMessageIndex === 0) {
+    // Oldest message - scroll to top
+    chatBox.setScrollPerc(0);
   } else {
-    // Calculate approximate scroll position
-    const totalMessages = messages.length;
-    const scrollPercent = ((totalMessages - selectedMessageIndex) / totalMessages) * 100;
+    // Calculate scroll position to keep selected message in view
+    const scrollPercent = (selectedMessageIndex / (messages.length - 1)) * 100;
     chatBox.setScrollPerc(scrollPercent);
   }
   
