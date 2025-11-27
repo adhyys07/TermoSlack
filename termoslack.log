@@ -501,3 +501,80 @@ https://dashboard.ngrok.com/get-started/your-authtoken error_code: ERR_NGROK_105
 [2025-11-26T20:41:32.271Z] [INFO] Switched to channel highway (C08Q1H6D79B)
 [2025-11-26T20:41:34.945Z] [INFO] Downloading image: https://files.slack.com/files-pri/T09V59WQY1E-F09UCKN9BCP/download/image.png
 [2025-11-26T20:41:38.797Z] [INFO] Cached image to: d4781a001fb9914d4251c2d93641e92e
+[2025-11-27T06:57:19.308Z] [INFO] TermoSlack starting...
+[2025-11-27T06:57:19.313Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-27T06:57:19.314Z] [INFO] Found 1 saved session(s)
+[2025-11-27T06:57:19.315Z] [INFO] Attempting to restore session
+[2025-11-27T06:57:19.382Z] [INFO] Loading channels
+[2025-11-27T06:57:20.159Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-27T06:57:20.214Z] [INFO] Loaded 172 channels/DMs
+[2025-11-27T06:57:20.236Z] [INFO] Session restored and channels loaded
+[2025-11-27T06:57:23.254Z] [INFO] DM user names loaded
+[2025-11-27T08:19:06.370Z] [INFO] TermoSlack starting...
+[2025-11-27T08:19:06.374Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-27T08:19:06.375Z] [INFO] Found 1 saved session(s)
+[2025-11-27T08:19:06.376Z] [INFO] Attempting to restore session
+[2025-11-27T08:19:06.441Z] [INFO] Loading channels
+[2025-11-27T08:19:07.284Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-27T08:19:07.470Z] [INFO] Loaded 172 channels/DMs
+[2025-11-27T08:19:07.501Z] [INFO] Session restored and channels loaded
+[2025-11-27T08:19:09.487Z] [INFO] Loaded 20 messages from channel C0799LEA75X
+[2025-11-27T08:19:09.531Z] [INFO] Switched to channel alex-containment-chamber (C0799LEA75X)
+[2025-11-27T08:19:10.564Z] [INFO] DM user names loaded
+[2025-11-27T08:20:30.886Z] [INFO] TermoSlack starting...
+[2025-11-27T08:20:30.888Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-27T08:20:30.888Z] [INFO] Found 1 saved session(s)
+[2025-11-27T08:20:30.889Z] [INFO] Attempting to restore session
+[2025-11-27T08:20:30.947Z] [INFO] Loading channels
+[2025-11-27T08:20:31.710Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-27T08:20:31.755Z] [INFO] Loaded 172 channels/DMs
+[2025-11-27T08:20:31.774Z] [INFO] Session restored and channels loaded
+[2025-11-27T08:20:34.747Z] [INFO] Loaded 20 messages from channel C0799LEA75X
+[2025-11-27T08:20:34.760Z] [INFO] Switched to channel alex-containment-chamber (C0799LEA75X)
+[2025-11-27T08:20:34.808Z] [INFO] DM user names loaded
+[2025-11-27T08:20:37.641Z] [INFO] Downloading image: https://files.slack.com/files-pri/T09V59WQY1E-F09UTGLMZNW/download/mvimg_20190715_202809.jpg
+[2025-11-27T08:20:39.111Z] [INFO] Cached image to: d48249d253cc6292db39b9a602ff5762
+[2025-11-27T08:26:29.430Z] [INFO] TermoSlack starting...
+[2025-11-27T08:26:29.434Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-27T08:26:29.435Z] [INFO] Found 1 saved session(s)
+[2025-11-27T08:26:29.435Z] [INFO] Attempting to restore session
+[2025-11-27T08:26:29.498Z] [INFO] Loading channels
+[2025-11-27T08:26:30.696Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-27T08:26:30.742Z] [INFO] Loaded 172 channels/DMs
+[2025-11-27T08:26:30.766Z] [INFO] Session restored and channels loaded
+[2025-11-27T08:26:32.704Z] [INFO] Loaded 20 messages from channel C0799LEA75X
+[2025-11-27T08:26:32.745Z] [INFO] Switched to channel alex-containment-chamber (C0799LEA75X)
+[2025-11-27T08:26:33.735Z] [INFO] DM user names loaded
+[2025-11-27T08:26:40.716Z] [INFO] Loaded 20 messages from channel C0799LEA75X
+[2025-11-27T08:26:40.729Z] [INFO] Switched to channel alex-containment-chamber (C0799LEA75X)
+[2025-11-27T08:26:44.968Z] [INFO] Loaded 20 messages from channel C0799LEA75X
+[2025-11-27T08:26:44.972Z] [INFO] Switched to channel alex-containment-chamber (C0799LEA75X)
+[2025-11-27T08:26:55.056Z] [INFO] Loaded 20 messages from channel C0799LEA75X
+[2025-11-27T08:26:55.062Z] [INFO] Switched to channel alex-containment-chamber (C0799LEA75X)
+[2025-11-27T08:34:40.306Z] [INFO] TermoSlack starting...
+[2025-11-27T08:34:40.310Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-27T08:34:40.310Z] [INFO] Found 1 saved session(s)
+[2025-11-27T08:34:40.311Z] [INFO] Attempting to restore session
+[2025-11-27T08:34:40.374Z] [INFO] Loading channels
+[2025-11-27T08:34:41.125Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-27T08:34:41.179Z] [INFO] Loaded 172 channels/DMs
+[2025-11-27T08:34:41.198Z] [INFO] Session restored and channels loaded
+[2025-11-27T08:34:44.117Z] [INFO] DM user names loaded
+[2025-11-27T08:34:48.709Z] [INFO] Loaded 20 messages from channel C09EQ4YNPM2
+[2025-11-27T08:34:48.754Z] [INFO] Switched to channel alleyway (C09EQ4YNPM2)
+[2025-11-27T08:34:50.117Z] [INFO] Loaded 20 messages from channel C0799LEA75X
+[2025-11-27T08:34:50.123Z] [INFO] Switched to channel alex-containment-chamber (C0799LEA75X)
+[2025-11-27T08:35:03.631Z] [INFO] Loaded 20 messages from channel C0799LEA75X
+[2025-11-27T08:35:03.639Z] [INFO] Switched to channel alex-containment-chamber (C0799LEA75X)
+[2025-11-27T08:46:06.829Z] [INFO] TermoSlack starting...
+[2025-11-27T08:46:06.832Z] [INFO] Runtime directory: E:\TermoSlack\src
+[2025-11-27T08:46:06.833Z] [INFO] Found 1 saved session(s)
+[2025-11-27T08:46:06.834Z] [INFO] Attempting to restore session
+[2025-11-27T08:46:06.922Z] [INFO] Loading channels
+[2025-11-27T08:46:07.686Z] [INFO] Found 296 DMs, showing top 25 recent
+[2025-11-27T08:46:07.745Z] [INFO] Loaded 172 channels/DMs
+[2025-11-27T08:46:07.775Z] [INFO] Session restored and channels loaded
+[2025-11-27T08:46:11.512Z] [INFO] DM user names loaded
+[2025-11-27T08:46:14.692Z] [INFO] Loaded 20 messages from channel C0799LEA75X
+[2025-11-27T08:46:14.742Z] [INFO] Switched to channel alex-containment-chamber (C0799LEA75X)
+[2025-11-27T08:46:27.734Z] [INFO] Loaded 56 thread replies

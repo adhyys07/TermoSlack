@@ -1,19 +1,27 @@
 import blessed from 'blessed';
-import { sendMessage, loadMessages,getUserToken } from './user_client.js';
+import { sendMessage, loadMessages, getUserToken, searchMessages, loadThreadReplies } from './user_client.js';
 import { logInfo, logError } from './logger.js';
 import { getCachedImage } from './image_cache.js';
 
 let screen, channelList, chatBox, input, header, statusBar, navbar, channelsBtn, dmsBtn, searchBox, joinBox, imageViewer, suggestionsBox;
+let globalSearchBox, searchResultsBox, threadBox;
 let channels = [];
 let currentChannelId = null;
 let currentView = 'channels'; // 'channels' or 'dms'
 let searchMode = false;
 let searchQuery = '';
 let joinMode = false;
+let globalSearchMode = false;
+let threadMode = false;
 let messages=[];
 let selectedMessageIndex=-1;
 let allPublicChannels = [];
 let selectedSuggestion = 0;
+let searchResults = [];
+let searchPage = 1;
+let searchTotalPages = 1;
+let threadMessages = [];
+let currentThreadTs = null;
 
 export function createUI() {
   screen = blessed.screen({
@@ -79,16 +87,26 @@ export function createUI() {
     keys: true,
     vi: true,
     tags: true,
-    wrap: true,
+    wrap: false, // We'll handle wrapping manually
     scrollbar: {
-      ch: ' ',
-      inverse: true
+      ch: '█',
+      track: {
+        bg: 'gray'
+      },
+      style: {
+        inverse: true,
+        bg: 'white'
+      }
     },
     style: {
       fg: 'white',
       bg: 'black',
       border: {
         fg: 'white'
+      },
+      scrollbar: {
+        bg: 'white',
+        fg: 'blue'
       }
     },
     border: {
@@ -122,7 +140,7 @@ export function createUI() {
     left: 0,
     width: '33%',
     height: 3,
-    content: '{center}[F1] Channels | [Ctrl+F] Search{/center}',
+    content: '{center}[F1] Channels | [Ctrl+F] Filter{/center}',
     tags: true,
     style:{
       fg: 'white',
@@ -134,9 +152,9 @@ export function createUI() {
   dmsBtn = blessed.button({
     bottom: 0,
     left: '33%',
-    width: '33%',
+    width: '34%',
     height: 3,
-    content: '{center}[F2] Direct Messages{/center}',
+    content: '{center}[F2] DMs | [Enter] Chat | [Ctrl+S] Search | [T] Thread{/center}',
     tags: true,
     style:{
       fg: 'white',
@@ -262,6 +280,100 @@ export function createUI() {
   screen.append(joinBox);
   screen.append(suggestionsBox);
 
+  // Global Search Box (hidden by default)
+  globalSearchBox = blessed.textbox({
+    top: 3,
+    left: '25%',
+    width: '75%',
+    height: 3,
+    label: ' Global Search (Enter to search, Esc to cancel) ',
+    hidden: true,
+    inputOnFocus: true,
+    tags: true,
+    style: {
+      fg: 'white',
+      bg: 'black',
+      border: {
+        fg: 'yellow'
+      }
+    },
+    border: {
+      type: 'line'
+    }
+  });
+
+  // Search Results Box (hidden by default)
+  searchResultsBox = blessed.list({
+    top: 6,
+    left: '25%',
+    width: '75%',
+    height: '100%-12',
+    label: ' Search Results ',
+    hidden: true,
+    scrollable: true,
+    alwaysScroll: true,
+    keys: true,
+    vi: true,
+    interactive: true,
+    tags: true,
+    mouse: false,
+    scrollbar: {
+      ch: ' ',
+      inverse: true
+    },
+    style: {
+      fg: 'white',
+      bg: 'black',
+      selected: {
+        fg: 'black',
+        bg: 'white'
+      },
+      border: {
+        fg: 'cyan'
+      },
+      scrollbar: {
+        bg: 'cyan'
+      }
+    },
+    border: {
+      type: 'line'
+    }
+  });
+
+  // Thread Box (hidden by default)
+  threadBox = blessed.box({
+    top: 3,
+    left: '25%',
+    width: '75%',
+    height: '100%-9',
+    label: ' Thread ',
+    hidden: true,
+    scrollable: true,
+    alwaysScroll: true,
+    keys: true,
+    vi: true,
+    tags: true,
+    wrap: true,
+    scrollbar: {
+      ch: ' ',
+      inverse: true
+    },
+    style: {
+      fg: 'white',
+      bg: 'black',
+      border: {
+        fg: 'magenta'
+      }
+    },
+    border: {
+      type: 'line'
+    }
+  });
+
+  screen.append(globalSearchBox);
+  screen.append(searchResultsBox);
+  screen.append(threadBox);
+
   // Start with channel list focused
   channelList.focus();
   updateButtonStyles();
@@ -291,25 +403,42 @@ export function createUI() {
     if (channelList.focused) {
       input.focus();
     } else if (input.focused) {
-      chatBox.focus();
+      channelList.focus();
     } else {
       channelList.focus();
     }
     screen.render();
   });
 
-  // Arrow keys for scrolling messages
-  screen.key(['up'], () => {
-    if (chatBox.focused) {
-      chatBox.scroll(-1);
+  // Enter - Focus chat area for message navigation
+  screen.key(['enter'], () => {
+    if (!input.focused && !chatBox.focused) {
+      chatBox.focus();
+      // Initialize selected message when focusing chat
+      if (messages.length > 0 && selectedMessageIndex === -1) {
+        selectedMessageIndex = 0; // Select most recent (bottom)
+        displayMessages(messages);
+      }
       screen.render();
     }
   });
 
+  // Arrow keys for scrolling messages
+  screen.key(['up'], () => {
+    if (chatBox.focused && messages.length > 0) {
+      if (selectedMessageIndex < messages.length - 1) {
+        selectedMessageIndex++;
+        displayMessages(messages);
+      }
+    }
+  });
+
   screen.key(['down'], () => {
-    if (chatBox.focused) {
-      chatBox.scroll(1);
-      screen.render();
+    if (chatBox.focused && messages.length > 0) {
+      if (selectedMessageIndex > 0) {
+        selectedMessageIndex--;
+        displayMessages(messages);
+      }
     }
   });
 
@@ -328,6 +457,19 @@ export function createUI() {
       searchBox.focus();
       screen.render();
   }
+  });
+
+  // Ctrl+S - Global Search
+  screen.key(['C-s'], () => {
+    if (!globalSearchMode) {
+      globalSearchMode = true;
+      globalSearchBox.show();
+      globalSearchBox.focus();
+      chatBox.hide();
+      searchResultsBox.hide();
+      input.hide();
+      screen.render();
+    }
   });
 
   // Ctrl+J - Join channel
@@ -380,6 +522,21 @@ export function createUI() {
     if (!imageViewer.hidden) {
       imageViewer.hide();
       chatBox.focus();
+    } else if (threadMode) {
+      threadMode = false;
+      currentThreadTs = null;
+      threadBox.hide();
+      chatBox.show();
+      input.show();
+      chatBox.focus();
+    } else if (globalSearchMode) {
+      globalSearchMode = false;
+      globalSearchBox.hide();
+      globalSearchBox.clearValue();
+      searchResultsBox.hide();
+      chatBox.show();
+      input.show();
+      channelList.focus();
     } else if (searchMode) {
       searchMode = false;
       searchQuery = '';
@@ -397,6 +554,24 @@ export function createUI() {
       channelList.focus();
     }
     screen.render();
+  });
+
+  // T key - View thread
+  screen.key(['t'], async () => {
+    if (chatBox.focused && messages.length > 0 && selectedMessageIndex >= 0) {
+      const selectedMessage = messages[selectedMessageIndex];
+      
+      // Check if message has thread replies
+      if (selectedMessage.reply_count && selectedMessage.reply_count > 0) {
+        await viewThread(selectedMessage.ts);
+      } else if (selectedMessage.thread_ts) {
+        // Message is part of a thread
+        await viewThread(selectedMessage.thread_ts);
+      } else {
+        // Start a new thread with this message
+        await viewThread(selectedMessage.ts);
+      }
+    }
   });
 
   // Channel selection (keyboard)
@@ -433,15 +608,23 @@ export function createUI() {
 
     if (value.trim()) {
       try {
-        await sendMessage(currentChannelId, value);
-        statusBar.setContent(' Status: Message sent ✓');
+        // If in thread mode, send as thread reply
+        const threadTs = threadMode ? currentThreadTs : null;
+        await sendMessage(currentChannelId, value, threadTs);
+        statusBar.setContent(` Status: Message sent ${threadMode ? '(in thread) ' : ''}✓`);
         statusBar.style.fg = 'green';
         
-        // Reload messages to show the sent message
-        const messages = await loadMessages(currentChannelId);
-        displayMessages(messages);
+        // Reload messages or thread replies
+        if (threadMode) {
+          const replies = await loadThreadReplies(currentChannelId, currentThreadTs);
+          threadMessages = replies;
+          displayThread(replies);
+        } else {
+          const msgs = await loadMessages(currentChannelId);
+          displayMessages(msgs);
+        }
         
-        logInfo(`Message sent to channel ${currentChannelId}`);
+        logInfo(`Message sent to channel ${currentChannelId}${threadMode ? ' (in thread)' : ''}`);
       } catch (error) {
         statusBar.setContent(` Status: Error - ${error.message}`);
         statusBar.style.fg = 'red';
@@ -471,6 +654,69 @@ export function createUI() {
     updateView();
     channelList.focus();
     screen.render();
+  });
+
+  // Global search box submission
+  globalSearchBox.on('submit', async (value) => {
+    const query = value.trim();
+    
+    if (query) {
+      statusBar.setContent(` Status: Searching for "${query}"...`);
+      screen.render();
+
+      try {
+        const results = await searchMessages(query);
+        searchResults = results.matches;
+        searchPage = results.page;
+        searchTotalPages = results.page_count;
+
+        if (searchResults.length === 0) {
+          statusBar.setContent(` Status: No results found for "${query}"`);
+          searchResultsBox.setItems(['No results found']);
+        } else {
+          displaySearchResults(searchResults, query);
+          statusBar.setContent(` Status: Found ${results.total} results (Page ${searchPage}/${searchTotalPages})`);
+        }
+
+        globalSearchBox.hide();
+        searchResultsBox.show();
+        searchResultsBox.focus();
+      } catch (error) {
+        statusBar.setContent(` Status: Search failed - ${error.message}`);
+        logError('Search failed', error);
+      }
+    }
+
+    globalSearchBox.clearValue();
+    screen.render();
+  });
+
+  // Search results selection
+  searchResultsBox.on('select', async (item, index) => {
+    const selectedResult = searchResults[index];
+    if (selectedResult && selectedResult.channel_id) {
+      // Load the channel where the message was found
+      currentChannelId = selectedResult.channel_id;
+      
+      globalSearchMode = false;
+      searchResultsBox.hide();
+      chatBox.show();
+      input.show();
+      
+      chatBox.setLabel(` Messages - # ${selectedResult.channel_name} `);
+      
+      try {
+        const msgs = await loadMessages(currentChannelId);
+        messages = msgs || [];
+        displayMessages(messages);
+        chatBox.focus();
+        statusBar.setContent(` Status: Viewing # ${selectedResult.channel_name}`);
+      } catch (error) {
+        statusBar.setContent(` Status: Failed to load channel - ${error.message}`);
+      }
+      
+      screen.render();
+    }
   });
 
   // Join box input handler - show suggestions
@@ -614,6 +860,9 @@ async function selectChannel(index) {
     
     chatBox.setLabel(` Messages - ${displayName} `);
     
+    // Reset selection when switching channels
+    selectedMessageIndex = -1;
+    
     try {
       const loadedMessages = await loadMessages(currentChannelId);
       messages = loadedMessages;
@@ -702,25 +951,188 @@ export function updateStatus(message) {
   screen.render();
 }
 
+// Helper function to escape blessed tags in text
+function escapeText(text) {
+  if (!text) return '';
+  // Remove curly braces but preserve other formatting
+  return text.replace(/\{/g, '').replace(/\}/g, '');
+}
+
+function wrapText(text, maxWidth) {
+  if (!text) return [];
+  const lines = [];
+  const textLines = text.split('\n');
+  
+  for (const line of textLines) {
+    if (line.length <= maxWidth) {
+      lines.push(line);
+      continue;
+    }
+    
+    // Check if line contains a URL
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const hasUrl = urlRegex.test(line);
+    
+    if (hasUrl) {
+      // Don't break URLs - keep them on one line
+      lines.push(line);
+    } else {
+      // Word wrap for regular text
+      let currentLine = '';
+      const words = line.split(' ');
+      
+      for (const word of words) {
+        if ((currentLine + ' ' + word).trim().length <= maxWidth) {
+          currentLine = currentLine ? currentLine + ' ' + word : word;
+        } else {
+          if (currentLine) lines.push(currentLine);
+          currentLine = word;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+    }
+  }
+  
+  return lines;
+}
+
 function displayMessages(msgs) {
   if (!msgs || msgs.length === 0) {
     chatBox.setContent('No messages in this channel.');
+    selectedMessageIndex = -1;
     return;
   }
 
   // Store messages in reverse order (newest first for display)
   messages = [...msgs].reverse();
+  
+  // Initialize selected message to the most recent (bottom)
+  if (selectedMessageIndex === -1 || selectedMessageIndex >= messages.length) {
+    selectedMessageIndex = 0;
+  }
 
-  const formattedMessages = messages.map(msg => {
+  const boxWidth = chatBox.width - 4; // Account for borders and padding
+  const contentWidth = boxWidth - 5; // Leave space for box characters and padding
+
+  const formattedMessages = messages.map((msg, index) => {
     const timestamp = new Date(parseFloat(msg.ts) * 1000).toLocaleString();
     const username = msg.user_name || msg.username || 'Unknown';
     const imageIndicator = msg.has_images ? ' 📷' : '';
-    return `[${timestamp}] {blue-fg}{bold}${username}{/bold}{/blue-fg}:${imageIndicator} ${msg.text || ''}`;
-  }).join('\n\n');
+    const escapedText = escapeText(msg.text || '');
+    
+    // Highlight selected message
+    const isSelected = index === selectedMessageIndex;
+    const selectionMarker = isSelected ? '{yellow-fg}➤{/yellow-fg} ' : '  ';
+    
+    // Create message box
+    const borderColor = isSelected ? 'yellow' : 'blue';
+    const boxTop = `{${borderColor}-fg}┌${'─'.repeat(contentWidth)}┐{/${borderColor}-fg}`;
+    const boxBottom = `{${borderColor}-fg}└${'─'.repeat(contentWidth)}┘{/${borderColor}-fg}`;
+    
+    // Format header line
+    const headerLine = `{${borderColor}-fg}│{/${borderColor}-fg} ${selectionMarker}{cyan-fg}{bold}${escapeText(username)}{/bold}{/cyan-fg} {gray-fg}• ${timestamp}{/gray-fg}${imageIndicator}`;
+    
+    // Wrap message text to fit in box
+    const wrappedLines = wrapText(escapedText, contentWidth - 5);
+    const textLines = wrappedLines.map(line => 
+      `{${borderColor}-fg}│{/${borderColor}-fg}   ${line}`
+    ).join('\n');
+    
+    // Thread indicator on separate line if present
+    let threadLine = '';
+    if (msg.reply_count && msg.reply_count > 0) {
+      threadLine = `\n{${borderColor}-fg}│{/${borderColor}-fg}   {magenta-fg}💬 ${msg.reply_count} ${msg.reply_count === 1 ? 'reply' : 'replies'}{/magenta-fg}`;
+    }
+    
+    return `${boxTop}\n${headerLine}\n${textLines}${threadLine}\n${boxBottom}`;
+  }).join('\n');
 
   chatBox.setContent(formattedMessages);
-  chatBox.setScrollPerc(100);
+  
+  // Scroll to keep selected message visible
+  if (selectedMessageIndex === 0) {
+    // Most recent message - scroll to bottom
+    chatBox.setScrollPerc(100);
+  } else {
+    // Calculate approximate scroll position
+    const totalMessages = messages.length;
+    const scrollPercent = ((totalMessages - selectedMessageIndex) / totalMessages) * 100;
+    chatBox.setScrollPerc(scrollPercent);
+  }
+  
   screen.render();
+}
+
+async function viewThread(threadTs) {
+  if (!currentChannelId || !threadTs) return;
+  
+  try {
+    statusBar.setContent(' Status: Loading thread...');
+    screen.render();
+    
+    const replies = await loadThreadReplies(currentChannelId, threadTs);
+    threadMessages = replies;
+    currentThreadTs = threadTs;
+    threadMode = true;
+    
+    displayThread(replies);
+    
+    chatBox.hide();
+    threadBox.show();
+    threadBox.focus();
+    
+    statusBar.setContent(` Status: Viewing thread (${replies.length} messages) - Press Esc to close`);
+    screen.render();
+  } catch (error) {
+    statusBar.setContent(` Status: Failed to load thread - ${error.message}`);
+    logError('Failed to load thread', error);
+    screen.render();
+  }
+}
+
+function displayThread(replies) {
+  if (!replies || replies.length === 0) {
+    threadBox.setContent('No replies in this thread.');
+    return;
+  }
+
+  const formattedReplies = replies.map((msg, index) => {
+    const timestamp = new Date(parseFloat(msg.ts) * 1000).toLocaleString();
+    const username = msg.user_name || msg.username || 'Unknown';
+    const imageIndicator = msg.has_images ? ' 📷' : '';
+    const isParent = index === 0;
+    const prefix = isParent ? '📌 ' : '  ↳ ';
+    const escapedText = escapeText(msg.text || '');
+    return `${prefix}[${timestamp}] {blue-fg}{bold}${escapeText(username)}{/bold}{/blue-fg}:${imageIndicator} ${escapedText}`;
+  }).join('\n\n');
+
+  threadBox.setContent(formattedReplies);
+  threadBox.setScrollPerc(100);
+  screen.render();
+}
+
+function displaySearchResults(results, query) {
+  const formattedResults = results.map(result => {
+    const timestamp = new Date(parseFloat(result.ts) * 1000).toLocaleString();
+    const userName = result.user_name || 'Unknown';
+    const channelName = result.channel_name || 'Unknown';
+    const imageIndicator = result.has_images ? ' 📷' : '';
+    
+    // Escape text first, then highlight
+    let text = escapeText(result.text || '');
+    
+    // Escape regex special characters in query
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const highlightedText = text.replace(
+      new RegExp(`(${escapedQuery})`, 'gi'),
+      '{yellow-fg}{bold}$1{/bold}{/yellow-fg}'
+    );
+    
+    return `[${timestamp}] {cyan-fg}#${escapeText(channelName)}{/cyan-fg} | {blue-fg}{bold}${escapeText(userName)}{/bold}{/blue-fg}:${imageIndicator} ${highlightedText}`;
+  });
+
+  searchResultsBox.setItems(formattedResults);
+  searchResultsBox.select(0);
 }
 
 async function loadMoreMessages() {
@@ -746,7 +1158,8 @@ async function loadMoreMessages() {
         const timestamp = new Date(parseFloat(msg.ts) * 1000).toLocaleString();
         const username = msg.user_name || msg.username || 'Unknown';
         const imageIndicator = msg.has_images ? ' 📷' : '';
-        return `[${timestamp}] {blue-fg}{bold}${username}{/bold}{/blue-fg}:${imageIndicator} ${msg.text || ''}`;
+        const escapedText = escapeText(msg.text || '');
+        return `[${timestamp}] {blue-fg}{bold}${escapeText(username)}{/bold}{/blue-fg}:${imageIndicator} ${escapedText}`;
       }).join('\n\n');
       
       chatBox.setContent(formattedMessages);

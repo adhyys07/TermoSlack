@@ -25,16 +25,23 @@ export async function sendMessageAsUser(userToken, channel, text) {
     return client.chat.postMessage({channel, text});
 }
 
-export async function sendMessage(channelId, text) {
+export async function sendMessage(channelId, text, threadTs = null) {
     try {
         if (!userClient) {
             throw new Error('User client not initialized');
     }
-        const result = await userClient.chat.postMessage({
+        const messageOptions = {
             channel: channelId,
             text: text
-    });
-        logInfo(`Message sent to ${channelId}`);
+        };
+        
+        // If threadTs is provided, send as a thread reply
+        if (threadTs) {
+            messageOptions.thread_ts = threadTs;
+        }
+        
+        const result = await userClient.chat.postMessage(messageOptions);
+        logInfo(`Message sent to ${channelId}${threadTs ? ' (in thread)' : ''}`);
         return result;
 }       catch (error) {
         logError(`Error sending message to ${channelId}: ${error.message}`);
@@ -79,11 +86,13 @@ export async function loadMessages(channelId, limit = 20, oldest = undefined) {
 
         // Replace user mentions in message text with usernames
         let messageText = msg.text || '';
+        
+        // Replace user mentions
         if (messageText.includes('<@')) {
-          const userMentions = messageText.match(/<@([A-Z0-9]+)>/g);
+          const userMentions = messageText.match(/<@[A-Z0-9]+(\|[^>]+)?>/g);
           if (userMentions) {
             for (const mention of userMentions) {
-              const userId = mention.match(/<@([A-Z0-9]+)>/)[1];
+              const userId = mention.match(/<@([A-Z0-9]+)/)[1];
               try {
                 const mentionedUserInfo = await userClient.users.info({ user: userId });
                 const mentionedName = mentionedUserInfo.user.profile?.display_name || 
@@ -93,6 +102,34 @@ export async function loadMessages(channelId, limit = 20, oldest = undefined) {
               } catch (error) {
                 // Keep original if user info fetch fails
                 messageText = messageText.replace(mention, `@${userId}`);
+              }
+            }
+          }
+        }
+
+        // Replace channel mentions with channel names
+        if (messageText.includes('<#')) {
+          const channelMentions = messageText.match(/<#[C][A-Z0-9]+(\|[^>]+)?>/g);
+          if (channelMentions) {
+            for (const mention of channelMentions) {
+              // Check if channel name is already in the mention (format: <#C123|channel-name>)
+              const pipeMatch = mention.match(/<#[C][A-Z0-9]+\|([^>]+)>/);
+              if (pipeMatch) {
+                // Use the name from the pipe format
+                const channelName = pipeMatch[1];
+                messageText = messageText.replace(mention, `#${channelName}`);
+              } else {
+                // Fetch channel name from API
+                const channelId = mention.match(/<#([C][A-Z0-9]+)/)[1];
+                try {
+                  const channelInfo = await userClient.conversations.info({ channel: channelId });
+                  const channelName = channelInfo.channel.name;
+                  messageText = messageText.replace(mention, `#${channelName}`);
+                } catch (error) {
+                  // Keep original if channel info fetch fails
+                  logError(`Failed to resolve channel ${channelId}`, error);
+                  messageText = messageText.replace(mention, `#${channelId}`);
+                }
               }
             }
           }
@@ -122,6 +159,103 @@ export async function loadMessages(channelId, limit = 20, oldest = undefined) {
   }
 }
 
+export async function loadThreadReplies(channelId, threadTs) {
+  try {
+    if (!userClient) {
+      throw new Error('User client not initialized');
+    }
+
+    const result = await userClient.conversations.replies({
+      channel: channelId,
+      ts: threadTs,
+      limit: 100
+    });
+
+    // Process replies with user names
+    const repliesWithNames = await Promise.all(
+      result.messages.map(async (msg) => {
+        let userName = 'Unknown';
+        
+        if (msg.user) {
+          try {
+            const userInfo = await userClient.users.info({ user: msg.user });
+            userName = userInfo.user.profile?.display_name || userInfo.user.real_name || userInfo.user.name;
+          } catch (error) {
+            userName = msg.user;
+          }
+        } else {
+          userName = msg.username || 'Unknown';
+        }
+
+        // Replace mentions in text
+        let messageText = msg.text || '';
+        
+        // Replace user mentions
+        if (messageText.includes('<@')) {
+          const userMentions = messageText.match(/<@[A-Z0-9]+(\|[^>]+)?>/g);
+          if (userMentions) {
+            for (const mention of userMentions) {
+              const userId = mention.match(/<@([A-Z0-9]+)/)[1];
+              try {
+                const mentionedUserInfo = await userClient.users.info({ user: userId });
+                const mentionedName = mentionedUserInfo.user.profile?.display_name || 
+                                     mentionedUserInfo.user.real_name || 
+                                     mentionedUserInfo.user.name;
+                messageText = messageText.replace(mention, `@${mentionedName}`);
+              } catch (error) {
+                messageText = messageText.replace(mention, `@${userId}`);
+              }
+            }
+          }
+        }
+
+        // Replace channel mentions
+        if (messageText.includes('<#')) {
+          const channelMentions = messageText.match(/<#[C][A-Z0-9]+(\|[^>]+)?>/g);
+          if (channelMentions) {
+            for (const mention of channelMentions) {
+              const pipeMatch = mention.match(/<#[C][A-Z0-9]+\|([^>]+)>/);
+              if (pipeMatch) {
+                const channelName = pipeMatch[1];
+                messageText = messageText.replace(mention, `#${channelName}`);
+              } else {
+                const channelId = mention.match(/<#([C][A-Z0-9]+)/)[1];
+                try {
+                  const channelInfo = await userClient.conversations.info({ channel: channelId });
+                  const channelName = channelInfo.channel.name;
+                  messageText = messageText.replace(mention, `#${channelName}`);
+                } catch (error) {
+                  logError(`Failed to resolve channel ${channelId}`, error);
+                  messageText = messageText.replace(mention, `#${channelId}`);
+                }
+              }
+            }
+          }
+        }
+
+        const hasImages = msg.files && msg.files.length > 0 && 
+                         msg.files.some(f => f.mimetype?.startsWith('image/'));
+        
+        const imageFiles = hasImages ? msg.files.filter(f => f.mimetype?.startsWith('image/')) : [];
+
+        return {
+          ...msg,
+          text: messageText,
+          user_name: userName,
+          has_images: hasImages,
+          image_files: imageFiles
+        };
+      })
+    );
+
+    logInfo(`Loaded ${repliesWithNames.length} thread replies`);
+    return repliesWithNames;
+  } catch (error) {
+    logError(`Failed to load thread replies`, error);
+    throw error;
+  }
+}
+
 
 export async function getUserChannels(userToken) {
     const client = makeUserClient(userToken);
@@ -133,6 +267,131 @@ export async function getUserName(userToken, userId) {
     const client = makeUserClient(userToken);
     const res = await client.users.info({user: userId});
     return (res.user && (res.user.real_name || res.user.name)) || "Unknown";
+}
+
+export async function searchMessages(query, options = {}) {
+  try {
+    if (!userClient) {
+      throw new Error('User client not initialized');
+    }
+
+    logInfo(`Searching for: "${query}"`);
+
+    const searchOptions = {
+      query: query,
+      sort: options.sort || 'timestamp',
+      sort_dir: options.sortDir || 'desc',
+      count: options.count || 100
+    };
+
+    if (options.page) {
+      searchOptions.page = options.page;
+    }
+
+    const result = await userClient.search.messages(searchOptions);
+
+    // Process search results with user names and channel info
+    const processedMatches = await Promise.all(
+      result.messages.matches.map(async (match) => {
+        let userName = 'Unknown';
+        let channelName = 'Unknown';
+
+        // Get user name
+        if (match.user) {
+          try {
+            const userInfo = await userClient.users.info({ user: match.user });
+            userName = userInfo.user.profile?.display_name || userInfo.user.real_name || userInfo.user.name;
+          } catch (error) {
+            userName = match.username || match.user;
+          }
+        }
+
+        // Get channel name
+        if (match.channel?.id) {
+          try {
+            const channelInfo = await userClient.conversations.info({ channel: match.channel.id });
+            channelName = channelInfo.channel.name || match.channel.name;
+          } catch (error) {
+            channelName = match.channel.name || match.channel.id;
+          }
+        }
+
+        // Replace user mentions in text
+        let messageText = match.text || '';
+        const mentionRegex = /<@[A-Z0-9]+(\|[^>]+)?>/g;
+        const mentions = messageText.match(mentionRegex);
+        
+        if (mentions) {
+          for (const mention of mentions) {
+            const userId = mention.match(/<@([A-Z0-9]+)/)[1];
+            try {
+              const userInfo = await userClient.users.info({ user: userId });
+              const displayName = userInfo.user.profile?.display_name || userInfo.user.real_name || userInfo.user.name;
+              messageText = messageText.replace(mention, `@${displayName}`);
+            } catch (err) {
+              // Keep original mention if user lookup fails
+            }
+          }
+        }
+
+        // Replace channel mentions in text
+        const channelMentionRegex = /<#[C][A-Z0-9]+(\|[^>]+)?>/g;
+        const channelMentions = messageText.match(channelMentionRegex);
+        
+        if (channelMentions) {
+          for (const mention of channelMentions) {
+            // Check if channel name is already in the mention (format: <#C123|channel-name>)
+            const pipeMatch = mention.match(/<#[C][A-Z0-9]+\|([^>]+)>/);
+            if (pipeMatch) {
+              // Use the name from the pipe format
+              const channelName = pipeMatch[1];
+              messageText = messageText.replace(mention, `#${channelName}`);
+            } else {
+              // Fetch channel name from API
+              const channelId = mention.match(/<#([C][A-Z0-9]+)/)[1];
+              try {
+                const channelInfo = await userClient.conversations.info({ channel: channelId });
+                const chName = channelInfo.channel.name;
+                messageText = messageText.replace(mention, `#${chName}`);
+              } catch (err) {
+                // Keep original mention if channel lookup fails
+                logError(`Failed to resolve channel ${channelId} in search`, err);
+              }
+            }
+          }
+        }
+
+        // Check if message has files/images
+        const hasImages = match.files && match.files.length > 0 && 
+                         match.files.some(f => f.mimetype?.startsWith('image/'));
+        
+        const imageFiles = hasImages ? match.files.filter(f => f.mimetype?.startsWith('image/')) : [];
+
+        return {
+          ...match,
+          text: messageText,
+          user_name: userName,
+          channel_name: channelName,
+          channel_id: match.channel?.id,
+          has_images: hasImages,
+          image_files: imageFiles,
+          permalink: match.permalink
+        };
+      })
+    );
+
+    logInfo(`Found ${processedMatches.length} results for "${query}"`);
+
+    return {
+      matches: processedMatches,
+      total: result.messages.total,
+      page: result.messages.pagination?.page || 1,
+      page_count: result.messages.pagination?.page_count || 1
+    };
+  } catch (error) {
+    logError(`Failed to search messages for "${query}"`, error);
+    throw error;
+  }
 }
 
 export async function joinChannel(channelName) {
