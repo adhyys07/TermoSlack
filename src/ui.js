@@ -1,4 +1,4 @@
-import blessed from 'blessed';
+import blessed from 'neo-blessed';
 import { sendMessage, loadMessages, getUserToken, searchMessages, loadThreadReplies } from './user_client.js';
 import { logInfo, logError } from './logger.js';
 import { getCachedImage } from './image_cache.js';
@@ -24,6 +24,10 @@ let searchPage = 1;
 let searchTotalPages = 1;
 let threadMessages = [];
 let currentThreadTs = null;
+let userSearchTimeout = null;
+let currentUserSearchId = 0;
+let allWorkspaceUsers = [];
+let isUsersFullyLoaded = false;
 
 export function createUI() {
   screen = blessed.screen({
@@ -295,11 +299,10 @@ export function createUI() {
   });
 
   imageViewer = blessed.box({
-    top: 'center',
-    left: 'center',
-    width: '80%',
-    height: '80%',
-    label: ' Image Viewer (Press Esc to close) ',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
     hidden: true,
     scrollable: true,
     alwaysScroll: true,
@@ -308,15 +311,26 @@ export function createUI() {
     tags: true,
     style: {
       fg: 'white',
-      bg: 'black',
-      border: {
-        fg: 'cyan'
-      }
-    },
-    border: {
-      type: 'line'
+      bg: 'black'
     }
   });
+
+  // Info overlay for image viewer
+  const imageInfoBox = blessed.box({
+    parent: imageViewer,
+    bottom: 0,
+    left: 0,
+    width: '100%',
+    height: 1,
+    tags: true,
+    style: {
+      fg: 'white',
+      bg: 'blue',
+      transparent: true
+    },
+    content: ''
+  });
+  imageViewer.infoBox = imageInfoBox;
 
   screen.append(header);
   screen.append(channelList);
@@ -542,25 +556,7 @@ export function createUI() {
       userSearchMode = true;
       userSearchBox.show();
       userSearchBox.focus();
-      
-      // Load all users if not loaded
-      if (allUsers.length === 0) {
-        statusBar.setContent(' Status: Loading users...');
-        screen.render();
-        try {
-          const { getUserClient } = await import('./user_client.js');
-          const client = getUserClient();
-          const result = await client.users.list({
-            limit: 1000
-          });
-          allUsers = result.members.filter(u => !u.is_bot && !u.deleted && u.id !== 'USLACKBOT') || [];
-          statusBar.setContent(` Status: ${allUsers.length} users available`);
-        } catch (error) {
-          statusBar.setContent(' Status: Failed to load users');
-          logError('Failed to load users', error);
-        }
-      }
-      
+      statusBar.setContent(' Status: Type to search users...');
       screen.render();
     }
   });
@@ -650,6 +646,12 @@ export function createUI() {
       suggestionsBox.hide();
       channelList.focus();
     } else {
+      // If in DMs view, switch back to Channels view
+      if (currentView === 'dms') {
+        currentView = 'channels';
+        updateView();
+        updateButtonStyles();
+      }
       channelList.focus();
     }
     screen.render();
@@ -747,8 +749,17 @@ export function createUI() {
           threadMessages = replies;
           displayThread(replies);
         } else {
-          const msgs = await loadMessages(currentChannelId);
-          displayMessages(msgs);
+          // Small delay to ensure Slack API consistency
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+          const msgs = await loadMessages(currentChannelId, 50);
+          messages = msgs;
+          
+          // Update selection to the new message (last one)
+          selectedMessageIndex = messages.length - 1;
+          
+          displayMessages(messages);
+          chatBox.setScrollPerc(100);
         }
         
         logInfo(`Message sent to channel ${currentChannelId}${threadMode ? ' (in thread)' : ''}`);
@@ -765,6 +776,18 @@ export function createUI() {
   });
 
   // Search box handlers
+  searchBox.on('keypress', (ch, key) => {
+    if (key.name === 'escape') {
+      searchMode = false;
+      searchQuery = '';
+      searchBox.hide();
+      searchBox.clearValue();
+      updateView();
+      channelList.focus();
+      screen.render();
+    }
+  });
+
   searchBox.on('submit', (value) => {
     searchQuery = value.toLowerCase().trim();
     searchMode = false;
@@ -784,6 +807,19 @@ export function createUI() {
   });
 
   // Global search box submission
+  globalSearchBox.on('keypress', (ch, key) => {
+    if (key.name === 'escape') {
+      globalSearchMode = false;
+      globalSearchBox.hide();
+      globalSearchBox.clearValue();
+      searchResultsBox.hide();
+      chatBox.show();
+      input.show();
+      channelList.focus();
+      screen.render();
+    }
+  });
+
   globalSearchBox.on('submit', async (value) => {
     const query = value.trim();
     
@@ -848,6 +884,16 @@ export function createUI() {
 
   // Join box input handler - show suggestions
   joinBox.on('keypress', (ch, key) => {
+    if (key.name === 'escape') {
+      joinMode = false;
+      joinBox.hide();
+      joinBox.clearValue();
+      suggestionsBox.hide();
+      channelList.focus();
+      screen.render();
+      return;
+    }
+
     if (key.name === 'down' && !suggestionsBox.hidden) {
       // Move selection down in suggestions
       suggestionsBox.down();
@@ -934,7 +980,17 @@ export function createUI() {
   });
 
   // User search box input handler - show suggestions
-  userSearchBox.on('keypress', (ch, key) => {
+  userSearchBox.on('keypress', async (ch, key) => {
+    if (key.name === 'escape') {
+      userSearchMode = false;
+      userSearchBox.hide();
+      userSearchBox.clearValue();
+      userSuggestionsBox.hide();
+      channelList.focus();
+      screen.render();
+      return;
+    }
+
     if (key.name === 'down' && !userSuggestionsBox.hidden) {
       userSuggestionsBox.down();
       screen.render();
@@ -946,34 +1002,65 @@ export function createUI() {
       return;
     }
     
-    setTimeout(() => {
-      const query = userSearchBox.getValue().toLowerCase().trim();
+    // Clear previous timeout
+    if (userSearchTimeout) clearTimeout(userSearchTimeout);
+
+    userSearchTimeout = setTimeout(async () => {
+      const query = userSearchBox.getValue().trim();
       
-      if (query.length > 0) {
-        const suggestions = allUsers
-          .filter(u => {
+      if (query.length >= 2) {
+        try {
+          const searchStatus = isUsersFullyLoaded ? '' : ' (Caching users...)';
+          statusBar.setContent(` Status: Searching for "${query}"...${searchStatus}`);
+          screen.render();
+          
+          const searchLower = query.toLowerCase();
+          
+          // Search in local cache
+          const matchedUsers = allWorkspaceUsers.filter(u => {
             const name = (u.real_name || u.name || '').toLowerCase();
             const displayName = (u.profile?.display_name || '').toLowerCase();
-            return name.includes(query) || displayName.includes(query);
-          })
-          .slice(0, 10)
-          .map(u => {
-            const displayName = u.profile?.display_name || u.real_name || u.name;
-            const status = u.profile?.status_emoji ? `${u.profile.status_emoji} ` : '';
-            return `${status}${displayName} (@${u.name})`;
+            const username = (u.name || '').toLowerCase();
+            const profileRealName = (u.profile?.real_name || '').toLowerCase();
+            const email = (u.profile?.email || '').toLowerCase();
+            
+            return name.includes(searchLower) || 
+                   displayName.includes(searchLower) || 
+                   username.includes(searchLower) ||
+                   profileRealName.includes(searchLower) ||
+                   email.includes(searchLower);
           });
-        
-        if (suggestions.length > 0) {
-          userSuggestionsBox.setItems(suggestions);
-          userSuggestionsBox.show();
-        } else {
+          
+          if (matchedUsers.length > 0) {
+            const suggestions = matchedUsers
+              .slice(0, 10)
+              .map(u => {
+                const displayName = u.profile?.display_name || u.real_name || u.name;
+                const status = u.profile?.status_emoji ? `${u.profile.status_emoji} ` : '';
+                return `${status}${displayName} (@${u.name})`;
+              });
+            
+            // Cache the matched users for selection
+            allUsers = matchedUsers;
+            
+            userSuggestionsBox.setItems(suggestions);
+            userSuggestionsBox.show();
+            statusBar.setContent(` Status: Found ${matchedUsers.length} users${searchStatus}`);
+          } else {
+            userSuggestionsBox.hide();
+            statusBar.setContent(` Status: No users found for "${query}"${searchStatus}`);
+          }
+        } catch (error) {
           userSuggestionsBox.hide();
+          statusBar.setContent(` Status: Search error - ${error.message}`);
+          logError('User search error', error);
         }
       } else {
         userSuggestionsBox.hide();
+        statusBar.setContent(' Status: Type at least 2 characters to search...');
       }
       screen.render();
-    }, 10);
+    }, 300); // Debounce search by 300ms (fast local search)
   });
 
   // User search box submit handler
@@ -991,9 +1078,12 @@ export function createUI() {
       }
     }
     
+    // Hide search UI immediately
     userSearchMode = false;
     userSearchBox.hide();
     userSuggestionsBox.hide();
+    userSearchBox.clearValue();
+    screen.render();
     
     if (selectedUser) {
       statusBar.setContent(` Status: Opening DM with ${selectedUser.real_name || selectedUser.name}...`);
@@ -1011,28 +1101,39 @@ export function createUI() {
         if (result.ok && result.channel) {
           const dmChannelId = result.channel.id;
           
-          // Switch to DMs view
+          // Switch to DMs view immediately
           currentView = 'dms';
           updateButtonStyles();
-          
-          // Reload channels to include the new DM
-          if (reloadChannelsCallback) {
-            await reloadChannelsCallback();
-          }
           
           // Select the DM channel
           currentChannelId = dmChannelId;
           const displayName = `💬 ${selectedUser.real_name || selectedUser.name}`;
           chatBox.setLabel(` Messages - ${displayName} `);
           
-          const msgs = await loadMessages(dmChannelId);
+          // Force update view to show DMs list (even if not fully reloaded yet)
+          updateView();
+          screen.render();
+          
+          // Reload channels to include the new DM
+          if (reloadChannelsCallback) {
+            await reloadChannelsCallback();
+          }
+          
+          // Re-select channel ID after reload (in case reload cleared it or something)
+          currentChannelId = dmChannelId;
+          updateView(); // Update view again to highlight the new channel in the list
+          
+          const msgs = await loadMessages(dmChannelId, 50);
           messages = msgs;
+          selectedMessageIndex = messages.length - 1;
           displayMessages(msgs);
+          chatBox.setScrollPerc(100);
           
           statusBar.setContent(` Status: DM opened with ${selectedUser.real_name || selectedUser.name} ✓`);
           statusBar.style.fg = 'green';
           
           input.focus();
+          screen.render();
         } else {
           statusBar.setContent(` Status: Failed to open DM`);
           statusBar.style.fg = 'red';
@@ -1044,7 +1145,15 @@ export function createUI() {
       }
     }
     
+    screen.render();
+  });
+
+  userSearchBox.on('cancel', () => {
+    userSearchMode = false;
+    userSearchBox.hide();
     userSearchBox.clearValue();
+    userSuggestionsBox.hide();
+    channelList.focus();
     screen.render();
   });
 
@@ -1071,6 +1180,9 @@ export function createUI() {
     updateBorders();
     screen.render();
   });
+
+  // Start caching users in background
+  preloadUsers();
 
   screen.render();
 }
@@ -1291,10 +1403,10 @@ function displayMessages(msgs) {
     // Thread indicator on separate line if present
     let threadLine = '';
     if (msg.reply_count && msg.reply_count > 0) {
-      threadLine = `\n{${borderColor}-fg}│{/${borderColor}-fg}   {magenta-fg}💬 ${msg.reply_count} ${msg.reply_count === 1 ? 'reply' : 'replies'}{/magenta-fg}`;
+      threadLine = `\n{${borderColor}-fg}│{/${borderColor}-fg}\n{${borderColor}-fg}│{/${borderColor}-fg}   {magenta-fg}💬 ${msg.reply_count} ${msg.reply_count === 1 ? 'reply' : 'replies'}{/magenta-fg}`;
     }
     
-    return `${boxTop}\n${headerLine}\n${textLines}${threadLine}\n${boxBottom}`;
+    return `${boxTop}\n${headerLine}\n{${borderColor}-fg}│{/${borderColor}-fg}\n${textLines}${threadLine}\n${boxBottom}`;
   }).join('\n');
 
   chatBox.setContent(formattedMessages);
@@ -1403,7 +1515,7 @@ async function loadMoreMessages() {
     
     if (olderMessages && olderMessages.length > 0) {
       // Prepend older messages
-      const newMessages = [...olderMessages.reverse(), ...messages];
+      const newMessages = [...olderMessages, ...messages];
       messages = newMessages;
       
       const formattedMessages = messages.map(msg => {
@@ -1446,21 +1558,29 @@ async function showImage(message) {
                      imageFile.thumb_360 ||
                      imageFile.thumb_80;
     
+    // Calculate available space for image - FULL SCREEN
+    const availableWidth = screen.width;
+    const availableHeight = screen.height;
+
     const imageText = await getCachedImage(imageUrl, token, {
-      width: '100%',
-      height: '100%'
+      width: availableWidth,
+      height: availableHeight
     });
     
-    const imageInfo = `File: ${imageFile.name} | Size: ${(imageFile.size / 1024).toFixed(1)} KB\nPress Esc to close | Press O to open in browser`;
+    const imageInfo = `File: ${imageFile.name} | Size: ${(imageFile.size / 1024).toFixed(1)} KB`;
     
-    imageViewer.setContent(`${imageText}\n\n{center}${imageInfo}{/center}`);
+    // Update info overlay
+    if (imageViewer.infoBox) {
+      imageViewer.infoBox.setContent(` {bold}${imageInfo}{/bold} | Press Esc to close | O to open in browser`);
+    }
+    
+    imageViewer.setContent(imageText);
     imageViewer.show();
     imageViewer.focus();
     
     // Store current image URL for browser opening
     imageViewer.currentImageUrl = imageFile.permalink || imageFile.url_private;
     
-    statusBar.setContent(' Status: Viewing image (O=browser, Esc=close)');
     screen.render();
   } catch (error) {
     statusBar.setContent(` Status: Failed to load image - ${error.message}`);
@@ -1478,4 +1598,52 @@ let reloadChannelsCallback = null;
 
 export function setReloadChannelsCallback(callback) {
   reloadChannelsCallback = callback;
+}
+
+async function preloadUsers() {
+  try {
+    const { getUserClient } = await import('./user_client.js');
+    const client = getUserClient();
+    let cursor = undefined;
+    let totalLoaded = 0;
+    
+    // Don't show status immediately to avoid cluttering startup
+    // But start fetching
+    
+    do {
+      const result = await client.users.list({
+        limit: 1000,
+        cursor: cursor
+      });
+
+      const users = (result.members || []).filter(u => 
+        !u.is_bot && !u.deleted && u.id !== 'USLACKBOT'
+      );
+
+      allWorkspaceUsers = allWorkspaceUsers.concat(users);
+      totalLoaded += users.length;
+      
+      // Update status if we are in user search mode
+      if (userSearchMode) {
+        statusBar.setContent(` Status: Caching users... (${totalLoaded} loaded)`);
+        screen.render();
+      }
+
+      cursor = result.response_metadata?.next_cursor;
+      
+      // 2s delay to avoid rate limits (Tier 2: 20 req/min)
+      if (cursor) await new Promise(r => setTimeout(r, 2000));
+      
+    } while (cursor);
+    
+    isUsersFullyLoaded = true;
+    if (userSearchMode) {
+      statusBar.setContent(` Status: User cache complete (${allWorkspaceUsers.length} users)`);
+      screen.render();
+    }
+    logInfo(`User cache complete: ${allWorkspaceUsers.length} users`);
+    
+  } catch (error) {
+    logError('Failed to preload users', error);
+  }
 }

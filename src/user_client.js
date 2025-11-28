@@ -152,7 +152,7 @@ export async function loadMessages(channelId, limit = 20, oldest = undefined) {
     );
 
     logInfo(`Loaded ${messagesWithNames.length} messages from channel ${channelId}`);
-    return messagesWithNames;
+    return messagesWithNames.reverse();
   } catch (error) {
     logError(`Failed to load messages from channel ${channelId}`, error);
     throw error;

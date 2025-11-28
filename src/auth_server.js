@@ -7,7 +7,6 @@ import { logInfo, logError } from './logger.js';
 
 const app = express();
 let authServer = null;
-
 const userScopes = [
         "channels:read",
         "channels:write",
