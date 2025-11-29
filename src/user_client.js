@@ -16,6 +16,17 @@ export function getUserToken(){
     return userClient?.token;
 }
 
+export async function getCurrentUserId() {
+    if (!userClient) return null;
+    try {
+        const result = await userClient.auth.test();
+        return result.user_id;
+    } catch (error) {
+        logError('Failed to get current user ID', error);
+        return null;
+    }
+}
+
 export function makeUserClient(userToken) {
     return new WebClient(userToken);
 }
@@ -107,7 +118,6 @@ export async function loadMessages(channelId, limit = 20, oldest = undefined) {
           }
         }
 
-        // Replace channel mentions with channel names
         if (messageText.includes('<#')) {
           const channelMentions = messageText.match(/<#[C][A-Z0-9]+(\|[^>]+)?>/g);
           if (channelMentions) {
@@ -135,7 +145,6 @@ export async function loadMessages(channelId, limit = 20, oldest = undefined) {
           }
         }
 
-        // Check if message has files/images
         const hasImages = msg.files && msg.files.length > 0 && 
                          msg.files.some(f => f.mimetype?.startsWith('image/'));
         

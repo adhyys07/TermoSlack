@@ -1,5 +1,5 @@
 import blessed from 'neo-blessed';
-import { sendMessage, loadMessages, getUserToken, searchMessages, loadThreadReplies } from './user_client.js';
+import { sendMessage, loadMessages, getUserToken, searchMessages, loadThreadReplies, getCurrentUserId } from './user_client.js';
 import { logInfo, logError } from './logger.js';
 import { getCachedImage } from './image_cache.js';
 
@@ -19,6 +19,9 @@ let selectedMessageIndex=-1;
 let allPublicChannels = [];
 let allUsers = [];
 let selectedSuggestion = 0;
+let threadViewBox = null;
+let activityBox = null;
+let activityMatches = [];
 let searchResults = [];
 let searchPage = 1;
 let searchTotalPages = 1;
@@ -31,10 +34,11 @@ let isUsersFullyLoaded = false;
 
 export function createUI() {
   screen = blessed.screen({
-    smartCSR: true,
+    smartCSR: false,
     title: 'TermoSlack',
     fullUnicode: true,
-    sendFocus: true
+    sendFocus: true,
+    warnings: true
   });
 
   // Header
@@ -118,6 +122,31 @@ export function createUI() {
     border: {
       type: 'line'
     }
+  });
+
+  // Activity Box (initially hidden)
+  activityBox = blessed.list({
+    top: 3,
+    left: '25%',
+    width: '75%',
+    height: '100%-9',
+    label: ' Activity (Mentions) ',
+    tags: true,
+    keys: true,
+    vi: true,
+    mouse: true,
+    scrollable: true,
+    scrollbar:{
+      ch: ' ',
+      track : { bg: 'grey'},
+      style: { inverse: true }
+    },
+    border: {type: 'line'},
+    style: {
+      border: {fg: 'magenta'},
+      selected: {bg: 'blue', fg: 'white'}
+    },
+    hidden: true
   });
 
   // Input Box
@@ -209,7 +238,7 @@ export function createUI() {
     width: '25%',
     height: 3,
     label: ' Join Channel (Esc to cancel) ',
-    inputOnFocus: true,
+    inputOnFocus: false,
     hidden: true,
     style:{
       fg: 'white',
@@ -297,6 +326,113 @@ export function createUI() {
       type: 'line'
     }
   });
+
+  // Custom Confirmation Modal
+  const confirmationModal = blessed.box({
+    parent: screen,
+    top: 'center',
+    left: 'center',
+    width: 50,
+    height: 10,
+    label: ' Confirm ',
+    tags: true,
+    hidden: true,
+    border: { type: 'line' },
+    style: {
+      fg: 'white',
+      bg: 'blue',
+      border: { fg: 'white' }
+    }
+  });
+
+  const confirmText = blessed.text({
+    parent: confirmationModal,
+    top: 1,
+    left: 'center',
+    width: '90%',
+    height: 3,
+    align: 'center',
+    content: '',
+    style: { bg: 'blue', fg: 'white' }
+  });
+
+  const yesBtn = blessed.button({
+    parent: confirmationModal,
+    bottom: 1,
+    left: 5,
+    width: 10,
+    height: 3,
+    content: ' Yes ',
+    align: 'center',
+    valign: 'middle',
+    keys: true,
+    mouse: true,
+    style: {
+      bg: 'gray',
+      fg: 'white',
+      focus: {
+        bg: 'green',
+        fg: 'black',
+        bold: true
+      }
+    },
+    border: { type: 'line' }
+  });
+
+  const noBtn = blessed.button({
+    parent: confirmationModal,
+    bottom: 1,
+    right: 5,
+    width: 10,
+    height: 3,
+    content: ' No ',
+    align: 'center',
+    valign: 'middle',
+    keys: true,
+    mouse: true,
+    style: {
+      bg: 'gray',
+      fg: 'white',
+      focus: {
+        bg: 'red',
+        fg: 'black',
+        bold: true
+      }
+    },
+    border: { type: 'line' }
+  });
+
+  // Navigation between buttons
+  yesBtn.key(['right', 'tab'], () => { noBtn.focus(); screen.render(); });
+  noBtn.key(['left', 'tab'], () => { yesBtn.focus(); screen.render(); });
+  
+  function askConfirmation(message, callback) {
+      confirmText.setContent(message);
+      confirmationModal.show();
+      confirmationModal.setFront();
+      yesBtn.focus();
+      screen.render();
+
+      function onYes() {
+          cleanup();
+          callback(true);
+      }
+
+      function onNo() {
+          cleanup();
+          callback(false);
+      }
+
+      function cleanup() {
+          yesBtn.removeListener('press', onYes);
+          noBtn.removeListener('press', onNo);
+          confirmationModal.hide();
+          screen.render();
+      }
+
+      yesBtn.once('press', onYes);
+      noBtn.once('press', onNo);
+  }
 
   imageViewer = blessed.box({
     top: 0,
@@ -439,6 +575,7 @@ export function createUI() {
   screen.append(globalSearchBox);
   screen.append(searchResultsBox);
   screen.append(threadBox);
+  screen.append(activityBox);
 
   // Start with channel list focused
   channelList.focus();
@@ -462,6 +599,61 @@ export function createUI() {
     currentView = 'dms';
     updateView();
     updateButtonStyles();
+  });
+
+  // F3 - Toggle Activity View
+  screen.key(['f3'], async () => {
+    if (currentView === 'activity') {
+      currentView = 'channels'; // Default back to channels
+      updateView();
+      updateButtonStyles();
+    } else {
+      currentView = 'activity';
+      updateView();
+      await loadActivity();
+    }
+  });
+
+  // Handle Activity Selection
+  activityBox.on('select', async (item, index) => {
+    const match = activityMatches[index];
+    if (match && match.channel) {
+      // Switch to the channel
+      const channelId = match.channel.id;
+      currentChannelId = channelId;
+      currentView = 'channels'; // Switch to main view
+      
+      statusBar.setContent(` Status: Jumping to #${match.channel.name}...`);
+      updateView();
+      screen.render();
+      
+      try {
+        // Load messages for this channel (background context)
+        const msgs = await loadMessages(currentChannelId, 50);
+        messages = msgs;
+        selectedMessageIndex = messages.length - 1;
+        displayMessages(messages);
+        chatBox.setScrollPerc(100);
+        
+        // If it's a thread reply, open the thread
+        if (match.thread_ts) {
+          statusBar.setContent(` Status: Opening thread in #${match.channel.name}...`);
+          screen.render();
+          await viewThread(match.thread_ts);
+        } else {
+          // It's a regular message - try to highlight it
+          const msgIndex = messages.findIndex(m => m.ts === match.ts);
+          if (msgIndex !== -1) {
+            selectedMessageIndex = msgIndex;
+            displayMessages(messages);
+          }
+          chatBox.focus();
+          statusBar.setContent(` Status: Viewed activity in #${match.channel.name}`);
+        }
+      } catch (error) {
+        statusBar.setContent(` Status: Error loading activity - ${error.message}`);
+      }
+    }
   });
 
   // Tab - Switch focus between channel list and input
@@ -561,27 +753,57 @@ export function createUI() {
     }
   });
 
-  // Ctrl+J - Join channel
-  screen.key(['C-j'], async () => {
-    if (currentView === 'channels' && !joinMode) {
+  // Ctrl+J or F7 - Join channel
+  screen.key(['C-j', 'f7'], async () => {
+    if (!joinMode) {
+      // Close other modes if active to prevent overlap
+      if (searchMode) { searchMode = false; searchBox.hide(); }
+      if (userSearchMode) { userSearchMode = false; userSearchBox.hide(); }
+      
       joinMode = true;
       joinBox.show();
+      joinBox.setFront();
+      suggestionsBox.setFront();
       joinBox.focus();
+      joinBox.readInput();
+      statusBar.setContent(' Status: Type to search public channels...');
+      screen.render();
       
       // Load all public channels if not loaded
       if (allPublicChannels.length === 0) {
-        statusBar.setContent(' Status: Loading public channels...');
+        statusBar.setContent(' Status: Loading public channels directory...');
         screen.render();
         try {
           const { getUserClient } = await import('./user_client.js');
           const client = getUserClient();
-          const result = await client.conversations.list({
-            exclude_archived: true,
-            types: 'public_channel',
-            limit: 1000
-          });
-          allPublicChannels = result.channels || [];
-          statusBar.setContent(` Status: ${allPublicChannels.length} public channels available`);
+          
+          // Fetch channels with pagination
+          let cursor;
+          let channels = [];
+          
+          do {
+             const result = await client.conversations.list({
+              exclude_archived: true,
+              types: 'public_channel',
+              limit: 1000,
+              cursor: cursor
+            });
+            
+            channels = channels.concat(result.channels || []);
+            cursor = result.response_metadata?.next_cursor;
+            
+            // Update status for large workspaces
+            if (cursor) {
+               statusBar.setContent(` Status: Loading channels... (${channels.length} found)`);
+               screen.render();
+            }
+            
+          } while (cursor);
+
+          // Filter out channels we are already in
+          allPublicChannels = channels.filter(ch => !ch.is_member);
+          
+          statusBar.setContent(` Status: ${allPublicChannels.length} channels available to join`);
         } catch (error) {
           statusBar.setContent(' Status: Failed to load channels');
           logError('Failed to load public channels', error);
@@ -883,6 +1105,7 @@ export function createUI() {
   });
 
   // Join box input handler - show suggestions
+  let joinSearchTimeout = null;
   joinBox.on('keypress', (ch, key) => {
     if (key.name === 'escape') {
       joinMode = false;
@@ -891,6 +1114,8 @@ export function createUI() {
       suggestionsBox.hide();
       channelList.focus();
       screen.render();
+      // Manually emit cancel to stop readInput if needed, though readInput handles escape internally
+      joinBox.emit('cancel');
       return;
     }
 
@@ -907,76 +1132,171 @@ export function createUI() {
       return;
     }
     
-    setTimeout(() => {
+    if (joinSearchTimeout) clearTimeout(joinSearchTimeout);
+
+    joinSearchTimeout = setTimeout(() => {
       const query = joinBox.getValue().toLowerCase().trim();
+      let needsRender = false;
       
       if (query.length > 0) {
-        const suggestions = allPublicChannels
-          .filter(ch => ch.name.toLowerCase().includes(query))
-          .slice(0, 10)
-          .map(ch => `# ${ch.name}${ch.topic?.value ? ' - ' + ch.topic.value.substring(0, 40) : ''}`);
-        
-        if (suggestions.length > 0) {
-          suggestionsBox.setItems(suggestions);
-          suggestionsBox.show();
+        if (allPublicChannels.length === 0) {
+           statusBar.setContent(' Status: Loading channels directory... please wait');
+           needsRender = true;
         } else {
-          suggestionsBox.hide();
+          const suggestions = allPublicChannels
+            .filter(ch => ch.name.toLowerCase().includes(query))
+            .slice(0, 10)
+            .map(ch => {
+               const memberCount = ch.num_members ? ` (${ch.num_members})` : '';
+               return `# ${ch.name}${memberCount}`;
+            });
+          
+          if (suggestions.length > 0) {
+            suggestionsBox.setItems(suggestions);
+            if (suggestionsBox.hidden) {
+              suggestionsBox.show();
+              suggestionsBox.setFront();
+              needsRender = true;
+            } else {
+              // If items changed, we should render
+              needsRender = true; 
+            }
+            statusBar.setContent(` Status: Found ${suggestions.length} matches for "${query}"`);
+          } else {
+            if (!suggestionsBox.hidden) {
+              suggestionsBox.hide();
+              needsRender = true;
+            }
+            statusBar.setContent(` Status: No channels found matching "${query}"`);
+            needsRender = true; // Update status bar
+          }
         }
       } else {
-        suggestionsBox.hide();
+        if (!suggestionsBox.hidden) {
+          suggestionsBox.hide();
+          needsRender = true;
+        }
+        statusBar.setContent(' Status: Type to search public channels...');
+        needsRender = true;
       }
-      screen.render();
-    }, 10);
-  });
-
-  // Join box handlers
+      
+      if (needsRender) {
+        screen.render();
+      }
+    }, 100);
+  });  // Join box handlers
   joinBox.on('submit', async (value) => {
     let channelName = value.trim();
+    let channelId = null;
     
     // If suggestions are visible and a suggestion is selected, use that
     if (!suggestionsBox.hidden) {
       const selectedItem = suggestionsBox.getItem(suggestionsBox.selected);
       if (selectedItem) {
-        channelName = selectedItem.getText().replace(/^# /, '').split(' - ')[0];
+        // Extract name from format "# name (members)"
+        const text = selectedItem.getText();
+        const match = text.match(/^#\s+([^\s\(]+)/);
+        if (match) {
+            channelName = match[1];
+        }
       }
     }
     
-    joinMode = false;
-    joinBox.hide();
-    suggestionsBox.hide();
+    // Find ID from the loaded channels list (case-insensitive)
+    const channelObj = allPublicChannels.find(c => c.name.toLowerCase() === channelName.toLowerCase());
+    if (channelObj) {
+        channelId = channelObj.id;
+        // Use the canonical name
+        channelName = channelObj.name;
+    }
     
     if (channelName) {
-      statusBar.setContent(` Status: Joining #${channelName}...`);
-      screen.render();
-      
-      try {
-        const { joinChannel } = await import('./user_client.js');
-        const result = await joinChannel(channelName);
-        
-        if (result.success) {
-          statusBar.setContent(` Status: Successfully joined #${channelName} ✓`);
-          statusBar.style.fg = 'green';
-          
-          // Reload channels to show the newly joined channel
-          if (reloadChannelsCallback) {
-            await reloadChannelsCallback();
-          } else if (global.reloadChannels) {
-            await global.reloadChannels();
-          }
-        } else {
-          statusBar.setContent(` Status: Failed to join #${channelName} - ${result.error || 'Unknown error'}`);
+      if (!channelId) {
+          statusBar.setContent(` Status: Error - Channel #${channelName} not found in directory`);
           statusBar.style.fg = 'red';
-        }
-      } catch (error) {
-        statusBar.setContent(` Status: Error joining channel - ${error.message}`);
-        statusBar.style.fg = 'red';
-        logError(`Failed to join channel ${channelName}`, error);
+          joinBox.clearValue();
+          channelList.focus();
+          screen.render();
+          return;
       }
+
+      // Hide suggestions to clear view and prevent overlap
+      suggestionsBox.hide();
+      screen.render();
+
+      // Ask for confirmation
+      askConfirmation(`Are you sure you want to join #${channelName}?`, async (result) => {
+        if (result) {
+          // User confirmed
+          joinMode = false;
+          joinBox.hide();
+          
+          statusBar.setContent(` Status: Joining #${channelName}...`);
+          screen.render();
+          
+          try {
+            const { joinChannel } = await import('./user_client.js');
+            // Pass ID
+            const result = await joinChannel(channelId);
+            
+            if (result.success) {
+              statusBar.setContent(` Status: Successfully joined #${channelName} ✓`);
+              statusBar.style.fg = 'green';
+              
+              // Reload channels to show the newly joined channel
+              if (reloadChannelsCallback) {
+                await reloadChannelsCallback();
+              } else if (global.reloadChannels) {
+                await global.reloadChannels();
+              }
+              
+              // If we have an ID, switch to it
+              if (result.channel?.id || channelId) {
+                 const newId = result.channel?.id || channelId;
+                 currentChannelId = newId;
+                 
+                 // Switch to channels view if not already
+                 if (currentView !== 'channels') {
+                     currentView = 'channels';
+                     updateButtonStyles();
+                     updateView();
+                 }
+                 
+                 // Load messages immediately
+                 try {
+                     const msgs = await loadMessages(currentChannelId);
+                     messages = msgs;
+                     displayMessages(msgs);
+                     chatBox.setLabel(` Messages - # ${channelName} `);
+                 } catch (e) {
+                     logError('Failed to load messages after join', e);
+                 }
+              }
+            } else {
+              statusBar.setContent(` Status: Failed to join #${channelName} - ${result.error || 'Unknown error'}`);
+              statusBar.style.fg = 'red';
+            }
+          } catch (error) {
+            statusBar.setContent(` Status: Error joining channel - ${error.message}`);
+            statusBar.style.fg = 'red';
+            logError(`Failed to join channel ${channelName}`, error);
+          }
+          
+          joinBox.clearValue();
+          channelList.focus();
+          screen.render();
+        } else {
+          // User cancelled
+          joinBox.focus();
+          joinBox.readInput(); // Re-enable input reading
+          screen.render();
+        }
+      });
+    } else {
+      joinBox.clearValue();
+      channelList.focus();
+      screen.render();
     }
-    
-    joinBox.clearValue();
-    channelList.focus();
-    screen.render();
   });
 
   // User search box input handler - show suggestions
@@ -1241,17 +1561,34 @@ function updateBorders() {
 
 function updateButtonStyles() {
   if (currentView === 'channels') {
-    channelsBtn.setContent('{center}> [F1] Channels | [Ctrl+F] Search | [Ctrl+J] Join <{/center}');
-    dmsBtn.setContent('{center}[F2] Direct Messages{/center}');
-  } else {
+    channelsBtn.setContent('{center}> [F1] Channels | [Ctrl+F] Search | [F7] Join <{/center}');
+    dmsBtn.setContent('{center}[F2] DMs | [F3] Activity{/center}');
+  } else if (currentView === 'dms') {
     channelsBtn.setContent('{center}[F1] Channels{/center}');
-    dmsBtn.setContent('{center}> [F2] DMs | [Ctrl+F] Search <{/center}');
+    dmsBtn.setContent('{center}> [F2] DMs | [Ctrl+F] Search | [F3] Activity <{/center}');
+  } else if (currentView === 'activity') {
+    channelsBtn.setContent('{center}[F1] Channels{/center}');
+    dmsBtn.setContent('{center}[F2] DMs | > [F3] Activity <{/center}');
   }
   screen.render();
 }
 
 function updateView() {
   let filteredChannels;
+  
+  if (currentView === 'activity') {
+    chatBox.hide();
+    threadBox.hide();
+    globalSearchBox.hide();
+    searchResultsBox.hide();
+    activityBox.show();
+    activityBox.focus();
+    statusBar.setContent(' Status: Viewing Activity (Enter to jump to message)');
+    screen.render();
+    return;
+  } else {
+    activityBox.hide();
+  }
   
   if (currentView === 'channels') {
     channelList.setLabel(' Channels ');
@@ -1645,5 +1982,55 @@ async function preloadUsers() {
     
   } catch (error) {
     logError('Failed to preload users', error);
+  }
+}
+
+async function loadActivity() {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    activityBox.setItems(['Error: Could not identify current user.']);
+    screen.render();
+    return;
+  }
+  
+  activityBox.setLabel(' Activity: Loading... ');
+  screen.render();
+  
+  try {
+    // Search for mentions of the user
+    const result = await searchMessages(`<@${userId}>`, { count: 20 });
+    
+    if (!result.matches || result.matches.length === 0) {
+      activityBox.setItems(['No recent mentions found.']);
+      activityBox.setLabel(' Activity ');
+      activityMatches = [];
+      screen.render();
+      return;
+    }
+    
+    activityMatches = result.matches;
+    
+    const items = activityMatches.map(match => {
+      const time = new Date(parseFloat(match.ts) * 1000).toLocaleString();
+      const channelName = match.channel_name || match.channel?.name || 'Unknown';
+      const userName = match.user_name || match.username || 'Unknown';
+      // Clean up text for preview
+      let text = (match.text || '').replace(/\n/g, ' ').substring(0, 80);
+      if ((match.text || '').length > 80) text += '...';
+      
+      const typeLabel = match.thread_ts ? ' {cyan-fg}(Thread){/cyan-fg}' : '';
+      
+      // Format: [Channel] User: Message (Time)
+      return `{magenta-fg}#${escapeText(channelName)}{/magenta-fg}${typeLabel} {bold}${escapeText(userName)}{/bold}: ${escapeText(text)} {gray-fg}(${time}){/gray-fg}`;
+    });
+    
+    activityBox.setItems(items);
+    activityBox.setLabel(` Activity (${result.total} mentions) `);
+    screen.render();
+    
+  } catch (error) {
+    activityBox.setItems([`Error loading activity: ${error.message}`]);
+    activityBox.setLabel(' Activity (Error) ');
+    logError('Activity load failed', error);
   }
 }
