@@ -1890,6 +1890,12 @@ function displayMessages(msgs) {
   const boxWidth = chatBox.width - 4; // Account for borders and padding
   const contentWidth = Math.max(50, boxWidth - 5); // Minimum width 50, leave space for box characters
   const theme = getTheme();
+  
+  if (!theme || !theme.message || !theme.tags) {
+    // Fallback if theme is broken
+    chatBox.setContent('Error: Theme definition is incomplete.');
+    return;
+  }
 
   const formattedMessages = messages.map((msg, index) => {
     const timestamp = new Date(parseFloat(msg.ts) * 1000).toLocaleString();
@@ -1987,6 +1993,10 @@ function displayThread(replies) {
     return;
   }
   const theme = getTheme();
+  if (!theme || !theme.tags) {
+      threadBox.setContent('Error: Theme definition is incomplete.');
+      return;
+  }
 
   const formattedReplies = replies.map((msg, index) => {
     const timestamp = new Date(parseFloat(msg.ts) * 1000).toLocaleString();
@@ -2020,6 +2030,11 @@ function displayThread(replies) {
 
 function displaySearchResults(results, query) {
   const theme = getTheme();
+  if (!theme || !theme.message || !theme.tags) {
+      searchResultsBox.setItems(['Error: Theme definition is incomplete.']);
+      return;
+  }
+
   const formattedResults = results.map(result => {
     const timestamp = new Date(parseFloat(result.ts) * 1000).toLocaleString();
     const userName = result.user_name || 'Unknown';
@@ -2331,42 +2346,68 @@ async function loadActivity() {
 function applyTheme() {
   const theme = getTheme();
   
+  if (!theme) {
+    logError('applyTheme: Theme is undefined');
+    return;
+  }
+
+  // Ensure critical styles exist to prevent crashes
+  const primary = theme.primary || { fg: 'white', bg: 'black' };
+  const secondary = theme.secondary || { fg: 'gray', bg: 'black' };
+  const itemStyle = theme.item || { fg: 'white', bg: 'black' };
+  const selectedStyle = theme.selected || { fg: 'black', bg: 'white' };
+  const borderStyle = theme.border || { fg: 'white', bg: 'black' };
+  const scrollbarStyle = theme.scrollbar || { bg: 'white', fg: 'black' };
+  const headerStyle = theme.header || { fg: 'white', bg: 'black', bold: true };
+  const inputStyle = theme.input || { fg: 'white', bg: 'black', border: 'white' };
+
+  // Helper to safely update style
+  const updateStyle = (element, newStyle) => {
+    if (element && element.style) {
+      Object.assign(element.style, newStyle);
+    }
+  };
+
   // Update Header
-  header.style = theme.header;
+  updateStyle(header, headerStyle);
   
   // Update Channel List
-  channelList.style = { ...theme.primary, item: theme.item, selected: theme.selected, border: theme.border };
+  updateStyle(channelList, { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle });
   
   // Update Chat Box
-  chatBox.style = { ...theme.primary, border: theme.border, scrollbar: theme.scrollbar };
+  updateStyle(chatBox, { ...primary, border: borderStyle, scrollbar: scrollbarStyle });
+  // Also update scrollbar config style if present
+  if (chatBox.scrollbar && chatBox.scrollbar.style) {
+      Object.assign(chatBox.scrollbar.style, scrollbarStyle);
+  }
   
   // Update Input
-  input.style = { ...theme.input, border: theme.border };
+  updateStyle(input, { ...inputStyle, border: borderStyle });
   
   // Update Buttons
-  channelsBtn.style = theme.primary;
-  dmsBtn.style = theme.primary;
+  updateStyle(channelsBtn, primary);
+  updateStyle(dmsBtn, primary);
   
   // Update Status Bar
-  statusBar.style = theme.secondary;
+  updateStyle(statusBar, secondary);
   
   // Update Search Boxes
-  searchBox.style = { ...theme.primary, border: theme.border };
-  globalSearchBox.style = { ...theme.primary, border: theme.border };
-  userSearchBox.style = { ...theme.primary, border: theme.border };
-  joinBox.style = { ...theme.primary, border: theme.border };
+  updateStyle(searchBox, { ...primary, border: borderStyle });
+  updateStyle(globalSearchBox, { ...primary, border: borderStyle });
+  updateStyle(userSearchBox, { ...primary, border: borderStyle });
+  updateStyle(joinBox, { ...primary, border: borderStyle });
   
   // Update Lists
-  suggestionsBox.style = { ...theme.primary, item: theme.item, selected: theme.selected, border: theme.border };
-  userSuggestionsBox.style = { ...theme.primary, item: theme.item, selected: theme.selected, border: theme.border };
-  searchResultsBox.style = { ...theme.primary, item: theme.item, selected: theme.selected, border: theme.border, scrollbar: theme.scrollbar };
-  activityBox.style = { ...theme.primary, item: theme.item, selected: theme.selected, border: theme.border };
+  updateStyle(suggestionsBox, { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle });
+  updateStyle(userSuggestionsBox, { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle });
+  updateStyle(searchResultsBox, { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle, scrollbar: scrollbarStyle });
+  updateStyle(activityBox, { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle });
   
   // Update Thread Box
-  threadBox.style = { ...theme.primary, border: theme.border, scrollbar: theme.scrollbar };
+  updateStyle(threadBox, { ...primary, border: borderStyle, scrollbar: scrollbarStyle });
   
   // Update Image Viewer
-  imageViewer.style = theme.primary;
+  updateStyle(imageViewer, primary);
   
   // Re-render content that uses tags
   if (messages.length > 0) displayMessages(messages);
