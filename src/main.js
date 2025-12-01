@@ -8,6 +8,17 @@ import { saveSession, loadSession, listSessions } from './storage.js';
 import { initUserClient } from './user_client.js';
 import { logInfo, logError, logWarn } from './logger.js';
 
+// Global error handlers to prevent crashes
+process.on('uncaughtException', (err) => {
+  logError('Uncaught Exception', err);
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, p) => {
+  logError('Unhandled Rejection', reason);
+  console.error('Unhandled Rejection:', reason);
+});
+
 async function main() {
   // Load .env from the runtime directory (works when running node or a packaged exe)
   let __filename, __dirname, runtimeDir;

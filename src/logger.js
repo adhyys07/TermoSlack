@@ -1,11 +1,17 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import os from 'os';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const APP_DIR = path.join(os.homedir(), '.termoslack');
+if (!fs.existsSync(APP_DIR)) {
+    try {
+        fs.mkdirSync(APP_DIR, { recursive: true });
+    } catch (err) {
+        console.error('Failed to create app directory:', err);
+    }
+}
 
-const LOG_FILE = path.join(__dirname, '..', 'termoslack.log');
+const LOG_FILE = path.join(APP_DIR, 'termoslack.log');
 
 function formatTimestamp() {
     return new Date().toISOString();

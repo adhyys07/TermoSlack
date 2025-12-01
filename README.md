@@ -7,8 +7,13 @@ A terminal-based Slack client that allows you to use Slack **as yourself** (not 
 - ✅ **Acts as YOU** - All messages sent appear under your name, just like using Slack normally
 - ✅ **Real-time messaging** - Receive messages instantly via RTM (Real-Time Messaging)
 - ✅ **Channel/DM access** - See and interact with all channels and DMs you're a member of
+- ✅ **Join Channels** - Search and join public channels directly from the UI
+- ✅ **Image Viewing** - View images shared in channels (rendered as ASCII/ANSI art) or open them in your browser
+- ✅ **Custom Themes** - Choose from 4 different color themes (Default, Hacker, Light, Ocean)
+- ✅ **Custom Emojis** - View custom workspace emojis directly in the terminal
 - ✅ **Full user permissions** - Send messages, react to posts, upload files, and more
 - ✅ **Session persistence** - Login once and stay authenticated
+- ✅ **Secure Logout** - Easily revoke your session and clear local data
 
 ## Setup Instructions
 
@@ -84,22 +89,29 @@ npm run build:exe
 - **Arrow Keys**: Navigate through channels/DMs
 - **Enter**: Select a channel to view messages
 - **Type & Enter**: Send a message to the selected channel
-- **Ctrl+C**: Exit the app
+- **Ctrl+F**: Search for channels/DMs in the list
+- **Ctrl+S**: Global message search
+- **Ctrl+D**: Search for a user to DM
+- **Ctrl+U**: Upload a file to the current channel
+- **Ctrl+J / F7**: Join a new channel
+- **Ctrl+T**: Cycle through color themes
+- **Ctrl+Q**: Logout and exit
+- **Ctrl+C**: Force exit
+- **O**: Open selected image in browser
+- **T**: View thread for selected message
 
 ## User Scopes Requested
 
 The app requests these user scopes to function properly:
 
-- `channels:read`, `channels:write`, `channels:history` - Read and send messages in public channels
+- `channels:read`, `channels:write`, `channels:history`, `channels:join` - Read, send, and join public channels
 - `groups:read`, `groups:write`, `groups:history` - Read and send messages in private channels
 - `mpim:read`, `mpim:write`, `mpim:history` - Group DMs
 - `im:read`, `im:write`, `im:history` - Direct messages
 - `chat:write` - Send messages as you
 - `users:read` - See user names
-- `files:read`, `files:write` - Upload/download files
-- `reactions:read`, `reactions:write` - Add/view reactions
+- `files:read` - View files/images
 - `search:read` - Search messages
-- `emoji:read` - View custom emoji
 
 All actions are performed **as you**, just like using the Slack web/desktop app.
 

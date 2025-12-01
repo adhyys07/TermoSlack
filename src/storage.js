@@ -65,3 +65,18 @@ export function listSessions() {
     .filter(f => f.endsWith(".json"))
     .map(f => f.replace(/\.json$/, ""));
 }
+
+export function deleteSession(workspaceId, userId) {
+    ensureDirs();
+    const file = path.join(SESSIONS_DIR, `${workspaceId}_${userId}.json`);
+    if (fs.existsSync(file)) {
+        try {
+            fs.unlinkSync(file);
+            return true;
+        } catch (e) {
+            console.error(`Failed to delete session: ${e.message}`);
+            return false;
+        }
+    }
+    return false;
+}

@@ -1,5 +1,6 @@
 import { WebClient } from "@slack/web-api";
 import { logInfo, logError } from "./logger.js";
+import { log } from "console";
 
 let userClient = null;
 
@@ -278,6 +279,17 @@ export async function getUserName(userToken, userId) {
     return (res.user && (res.user.real_name || res.user.name)) || "Unknown";
 }
 
+export async function getCustomEmojis() {
+    if (!userClient) return {};
+    try {
+        const result = await userClient.emoji.list();
+        return result.emoji || {};
+    } catch (error) {
+        logError('Failed to fetch custom emojis', error);
+        return {};
+    }
+}
+
 export async function searchMessages(query, options = {}) {
   try {
     if (!userClient) {
@@ -554,6 +566,47 @@ export async function loadDMUserNames(channels, onProgress) {
     } catch (error) {
         console.error('Error loading DM user names:', error);
         return channels; // Return original channels on error
+    }
+}
+export async function logoutUser() {
+  if(!userClient) return;
+  try{
+    logInfo("Logging out user");
+    await userClient.auth.revoke();
+    logInfo("Token removed successfully");
+  } catch(error){
+    logError("Error logging out user", error);
+  }
+}
+
+export async function uploadFile(channelId, filePath, title, threadTs = null) {
+    if (!userClient) {
+        throw new Error('User client not initialized');
+    }
+
+    try {
+        const fs = await import('fs');
+        
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`File not found: ${filePath}`);
+        }
+
+        logInfo(`Uploading file: ${filePath} to ${channelId}`);
+
+        const result = await userClient.files.uploadV2({
+            channel_id: channelId,
+            file: fs.createReadStream(filePath),
+            filename: filePath.split(/[\\/]/).pop(),
+            title: title,
+            thread_ts: threadTs
+        });
+
+        const fileId = result.files && result.files[0] ? result.files[0].id : (result.file ? result.file.id : 'unknown');
+        logInfo(`File uploaded successfully: ${fileId}`);
+        return result;
+    } catch (error) {
+        logError(`Failed to upload file to ${channelId}`, error);
+        throw error;
     }
 }
 

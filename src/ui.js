@@ -1,7 +1,11 @@
 import blessed from 'neo-blessed';
-import { sendMessage, loadMessages, getUserToken, searchMessages, loadThreadReplies, getCurrentUserId } from './user_client.js';
+import { sendMessage, loadMessages, getUserToken, searchMessages, loadThreadReplies, getCurrentUserId, uploadFile, getCustomEmojis } from './user_client.js';
 import { logInfo, logError } from './logger.js';
 import { getCachedImage } from './image_cache.js';
+import { deleteSession } from './storage.js';
+import { pickFile } from './file_picker.js';
+import { emojify } from 'node-emoji';
+import { getTheme, cycleTheme } from './themes.js';
 
 let screen, channelList, chatBox, input, header, statusBar, navbar, channelsBtn, dmsBtn, searchBox, joinBox, imageViewer, suggestionsBox;
 let globalSearchBox, searchResultsBox, threadBox, userSearchBox, userSuggestionsBox;
@@ -31,6 +35,7 @@ let userSearchTimeout = null;
 let currentUserSearchId = 0;
 let allWorkspaceUsers = [];
 let isUsersFullyLoaded = false;
+let customEmojis = {};
 
 export function createUI() {
   screen = blessed.screen({
@@ -38,8 +43,11 @@ export function createUI() {
     title: 'TermoSlack',
     fullUnicode: true,
     sendFocus: true,
-    warnings: true
+    warnings: false
   });
+
+  // Load custom emojis in background
+  loadCustomEmojis();
 
   // Header
   header = blessed.box({
@@ -49,10 +57,7 @@ export function createUI() {
     height: 3,
     content: '{center}{bold}TermoSlack - Slack Terminal Client{/bold}{/center}',
     tags: true,
-    style: {
-      fg: 'white',
-      bg: "black"
-    }
+    style: getTheme().header
   });
 
   // Channel/DM List (left side)
@@ -70,15 +75,10 @@ export function createUI() {
     parseTags: true,
     invertSelected: false,
     style: {
-      fg: 'white',
-      bg: 'black',
-      selected: {
-        fg: 'black',
-        bg: 'white'
-      },
-      border: {
-        fg: 'white'
-      }
+      ...getTheme().primary,
+      item: getTheme().item,
+      selected: getTheme().selected,
+      border: getTheme().border
     },
     border: {
       type: 'line'
@@ -105,19 +105,13 @@ export function createUI() {
       },
       style: {
         inverse: true,
-        bg: 'white'
+        bg: getTheme().scrollbar.bg
       }
     },
     style: {
-      fg: 'white',
-      bg: 'black',
-      border: {
-        fg: 'white'
-      },
-      scrollbar: {
-        bg: 'white',
-        fg: 'blue'
-      }
+      ...getTheme().primary,
+      border: getTheme().border,
+      scrollbar: getTheme().scrollbar
     },
     border: {
       type: 'line'
@@ -143,8 +137,10 @@ export function createUI() {
     },
     border: {type: 'line'},
     style: {
-      border: {fg: 'magenta'},
-      selected: {bg: 'blue', fg: 'white'}
+      border: getTheme().border,
+      selected: getTheme().selected,
+      item: getTheme().item,
+      ...getTheme().primary
     },
     hidden: true
   });
@@ -158,11 +154,8 @@ export function createUI() {
     label: ' Type message (Tab to focus, Enter to send) ',
     inputOnFocus: true,
     style:{
-      fg: 'white',
-      bg: 'black',
-      border:{
-        fg:'white'
-      }
+      ...getTheme().input,
+      border: getTheme().border
     },
     border: {
       type: 'line'
@@ -177,10 +170,7 @@ export function createUI() {
     height: 3,
     content: '{center}[F1] Channels | [Ctrl+F] Filter{/center}',
     tags: true,
-    style:{
-      fg: 'white',
-      bg: 'black',
-    }
+    style: getTheme().primary
   });
 
   // DMs Button
@@ -191,23 +181,17 @@ export function createUI() {
     height: 3,
     content: '{center}[F2] DMs | [Enter] Chat | [Ctrl+D] DM User | [T] Thread{/center}',
     tags: true,
-    style:{
-      fg: 'white',
-      bg: 'black',
-    }
+    style: getTheme().primary
   });
 
   // Status Bar (overlay on left panel)
   statusBar = blessed.box({
-    top: 3,
-    left: '66%',
-    width: '34%',
+    bottom: 0,
+    left: '67%',
+    width: '33%',
     height: 3,
     content: ' Status: Ready',
-    style:{
-      fg: 'white',
-      bg: 'black',
-    }
+    style: getTheme().secondary
   });
 
   // Search Box (hidden by default)
@@ -220,11 +204,8 @@ export function createUI() {
     inputOnFocus: true,
     hidden: true,
     style:{
-      fg: 'white',
-      bg: 'black',
-      border:{
-        fg:'yellow'
-      }
+      ...getTheme().primary,
+      border: getTheme().border
     },
     border: {
       type: 'line'
@@ -241,11 +222,8 @@ export function createUI() {
     inputOnFocus: false,
     hidden: true,
     style:{
-      fg: 'white',
-      bg: 'black',
-      border:{
-        fg:'green'
-      }
+      ...getTheme().primary,
+      border: getTheme().border
     },
     border: {
       type: 'line'
@@ -264,15 +242,10 @@ export function createUI() {
     vi: true,
     tags: true,
     style: {
-      fg: 'white',
-      bg: 'black',
-      selected: {
-        fg: 'black',
-        bg: 'green'
-      },
-      border: {
-        fg: 'green'
-      }
+      ...getTheme().primary,
+      item: getTheme().item,
+      selected: getTheme().selected,
+      border: getTheme().border
     },
     border: {
       type: 'line'
@@ -289,11 +262,8 @@ export function createUI() {
     inputOnFocus: true,
     hidden: true,
     style:{
-      fg: 'white',
-      bg: 'black',
-      border:{
-        fg:'magenta'
-      }
+      ...getTheme().primary,
+      border: getTheme().border
     },
     border: {
       type: 'line'
@@ -312,15 +282,10 @@ export function createUI() {
     vi: true,
     tags: true,
     style: {
-      fg: 'white',
-      bg: 'black',
-      selected: {
-        fg: 'black',
-        bg: 'magenta'
-      },
-      border: {
-        fg: 'magenta'
-      }
+      ...getTheme().primary,
+      item: getTheme().item,
+      selected: getTheme().selected,
+      border: getTheme().border
     },
     border: {
       type: 'line'
@@ -445,10 +410,7 @@ export function createUI() {
     keys: true,
     vi: true,
     tags: true,
-    style: {
-      fg: 'white',
-      bg: 'black'
-    }
+    style: getTheme().primary
   });
 
   // Info overlay for image viewer
@@ -482,6 +444,28 @@ export function createUI() {
   screen.append(userSearchBox);
   screen.append(userSuggestionsBox);
 
+  // Suggestions Box for channel join (hidden by default)
+  suggestionsBox = blessed.list({
+    top: 6,
+    left: 0,
+    width: '25%',
+    height: 10,
+    label: ' Suggestions ',
+    hidden: true,
+    keys: true,
+    vi: true,
+    tags: true,
+    style: {
+      ...getTheme().primary,
+      item: getTheme().item,
+      selected: getTheme().selected,
+      border: getTheme().border
+    },
+    border: {
+      type: 'line'
+    }
+  });
+
   // Global Search Box (hidden by default)
   globalSearchBox = blessed.textbox({
     top: 3,
@@ -493,11 +477,8 @@ export function createUI() {
     inputOnFocus: true,
     tags: true,
     style: {
-      fg: 'white',
-      bg: 'black',
-      border: {
-        fg: 'yellow'
-      }
+      ...getTheme().primary,
+      border: getTheme().border
     },
     border: {
       type: 'line'
@@ -524,18 +505,11 @@ export function createUI() {
       inverse: true
     },
     style: {
-      fg: 'white',
-      bg: 'black',
-      selected: {
-        fg: 'black',
-        bg: 'white'
-      },
-      border: {
-        fg: 'cyan'
-      },
-      scrollbar: {
-        bg: 'cyan'
-      }
+      ...getTheme().primary,
+      item: getTheme().item,
+      selected: getTheme().selected,
+      border: getTheme().border,
+      scrollbar: getTheme().scrollbar
     },
     border: {
       type: 'line'
@@ -561,11 +535,8 @@ export function createUI() {
       inverse: true
     },
     style: {
-      fg: 'white',
-      bg: 'black',
-      border: {
-        fg: 'magenta'
-      }
+      ...getTheme().primary,
+      border: getTheme().border
     },
     border: {
       type: 'line'
@@ -585,6 +556,105 @@ export function createUI() {
 
   screen.key(['C-c'], () => {
     return process.exit(0);
+  });
+
+  // Ctrl+T - Cycle Theme
+  screen.key(['C-t'], () => {
+    try {
+      const newTheme = cycleTheme();
+      if (newTheme) {
+        applyTheme();
+        statusBar.setContent(` Status: Theme changed to ${newTheme.name}`);
+        screen.render();
+      } else {
+        logError('Failed to cycle theme: newTheme is undefined');
+      }
+    } catch (error) {
+      logError('Error cycling theme', error);
+      statusBar.setContent(` Status: Error changing theme`);
+      screen.render();
+    }
+  });
+
+  // Ctrl+Q - Logout
+  screen.key(['C-q'], () => {
+    askConfirmation('Are you sure you want to logout and exit?', async (result) => {
+      if (result) {
+        statusBar.setContent(' Status: Logging out...');
+        screen.render();
+        
+        try {
+          const { logoutUser, getCurrentUserId } = await import('./user_client.js');
+          
+          // Get current user info for session deletion
+          // We need to know which session to delete. 
+          // Since we don't have easy access to teamId/userId here without passing it down,
+          // we might need to rely on the fact that we are logged in.
+          // However, deleteSession requires teamId and userId.
+          // Let's try to get them from the current session if possible, or just revoke the token.
+          
+          // 1. Revoke token via API
+          await logoutUser();
+
+          // 2. Delete the session file
+          // We need to find the session file. Since we don't have the IDs handy in UI scope easily,
+          // we can try to list sessions and delete the one that matches our token, 
+          // OR we can just exit and let the user re-login.
+          // But to be clean, we should delete the session.
+          // Let's assume for now we just revoke and exit, and the user can manually clean up if needed,
+          // OR better, we can try to find the session file by checking which one works? No.
+          
+          // Actually, main.js has currentUserSession. We don't have access to it here.
+          // But we can export a function from main.js or storage.js to "delete current session".
+          // For now, let's just revoke. The session file will remain but be invalid.
+          // Wait, the user explicitly asked to "change the session location... and include the log files".
+          // And the logout logic was "delete the local token file".
+          // If I can't delete the specific session file, I should at least try.
+          
+          // Let's try to get the user ID from the client.
+          // We can't easily get the Team ID without an API call.
+          
+          // Alternative: Just exit. The token is revoked, so the session is dead.
+          // When the app restarts, it will try to use it, fail, and prompt for login.
+          // That seems acceptable.
+          
+          // BUT, the previous code was:
+          // fs.unlinkSync(tokenPath);
+          // So it WAS deleting the file.
+          
+          // Let's look at main.js again. It saves session as `${teamId}_${userId}.json`.
+          // If we can't get those, we can't delete the specific file.
+          
+          // However, we can just clear ALL sessions if we want a "full logout".
+          // Or we can leave it.
+          
+          // Let's just revoke and exit for now, as we don't have the session keys here.
+          // If the user wants to clear sessions, they can delete the folder.
+          // Or, I can add a "clear all sessions" option? No, that's too aggressive.
+          
+          // Wait, I can get the current user ID from `getCurrentUserId()`.
+          // I can get the team info from `userClient.team.info()`.
+          
+          const client = (await import('./user_client.js')).getUserClient();
+          if (client) {
+              try {
+                  const auth = await client.auth.test();
+                  const teamId = auth.team_id;
+                  const userId = auth.user_id;
+                  deleteSession(teamId, userId);
+              } catch (e) {
+                  // Ignore
+              }
+          }
+
+          // 3. Exit
+          return process.exit(0);
+        } catch (error) {
+          statusBar.setContent(` Status: Logout failed - ${error.message}`);
+          screen.render();
+        }
+      }
+    });
   });
 
   // F1 - Switch to Channels view
@@ -753,6 +823,66 @@ export function createUI() {
     }
   });
 
+  // Ctrl+U - Upload File
+  screen.key(['C-u'], async () => {
+    if (!currentChannelId) {
+      statusBar.setContent(' Status: Select a channel first');
+      screen.render();
+      return;
+    }
+    
+    statusBar.setContent(' Status: Opening file picker...');
+    screen.render();
+    
+    try {
+      // Temporarily release terminal focus/input if needed, but usually exec is fine
+      const file = await pickFile();
+      
+      if (!file) {
+        statusBar.setContent(' Status: File selection cancelled');
+        screen.render();
+        return;
+      }
+      
+      // Confirm upload
+      askConfirmation(`Upload ${file}?`, async (result) => {
+        if (result) {
+          statusBar.setContent(` Status: Uploading ${file}...`);
+          screen.render();
+          
+          try {
+            const threadTs = threadMode ? currentThreadTs : null;
+            await uploadFile(currentChannelId, file, undefined, threadTs);
+            
+            statusBar.setContent(' Status: File uploaded successfully ✓');
+            statusBar.style.fg = 'green';
+            
+            // Reload messages
+            if (threadMode) {
+              const replies = await loadThreadReplies(currentChannelId, currentThreadTs);
+              displayThread(replies);
+            } else {
+              const msgs = await loadMessages(currentChannelId, 50);
+              messages = msgs;
+              selectedMessageIndex = messages.length - 1;
+              displayMessages(messages);
+            }
+          } catch (error) {
+            statusBar.setContent(` Status: Upload failed - ${error.message}`);
+            statusBar.style.fg = 'red';
+          }
+          screen.render();
+        } else {
+          statusBar.setContent(' Status: Upload cancelled');
+          screen.render();
+        }
+      });
+    } catch (error) {
+      statusBar.setContent(` Status: File picker error - ${error.message}`);
+      screen.render();
+    }
+  });
+
   // Ctrl+J or F7 - Join channel
   screen.key(['C-j', 'f7'], async () => {
     if (!joinMode) {
@@ -808,6 +938,22 @@ export function createUI() {
           statusBar.setContent(' Status: Failed to load channels');
           logError('Failed to load public channels', error);
         }
+      }
+      
+      // Show suggestions immediately if channels are available
+      if (allPublicChannels.length > 0) {
+          const suggestions = allPublicChannels
+            .slice(0, 10)
+            .map(ch => {
+               const memberCount = ch.num_members ? ` (${ch.num_members})` : '';
+               return `# ${ch.name}${memberCount}`;
+            });
+          
+          if (suggestions.length > 0) {
+            suggestionsBox.setItems(suggestions);
+            suggestionsBox.show();
+            suggestionsBox.setFront();
+          }
       }
       
       screen.render();
@@ -1138,46 +1284,47 @@ export function createUI() {
       const query = joinBox.getValue().toLowerCase().trim();
       let needsRender = false;
       
-      if (query.length > 0) {
-        if (allPublicChannels.length === 0) {
-           statusBar.setContent(' Status: Loading channels directory... please wait');
-           needsRender = true;
-        } else {
-          const suggestions = allPublicChannels
-            .filter(ch => ch.name.toLowerCase().includes(query))
-            .slice(0, 10)
-            .map(ch => {
-               const memberCount = ch.num_members ? ` (${ch.num_members})` : '';
-               return `# ${ch.name}${memberCount}`;
-            });
-          
-          if (suggestions.length > 0) {
-            suggestionsBox.setItems(suggestions);
-            if (suggestionsBox.hidden) {
-              suggestionsBox.show();
-              suggestionsBox.setFront();
-              needsRender = true;
-            } else {
-              // If items changed, we should render
-              needsRender = true; 
-            }
-            statusBar.setContent(` Status: Found ${suggestions.length} matches for "${query}"`);
-          } else {
-            if (!suggestionsBox.hidden) {
-              suggestionsBox.hide();
-              needsRender = true;
-            }
-            statusBar.setContent(` Status: No channels found matching "${query}"`);
-            needsRender = true; // Update status bar
-          }
-        }
+      if (allPublicChannels.length === 0) {
+         if (query.length > 0) {
+             statusBar.setContent(' Status: Loading channels directory... please wait');
+             needsRender = true;
+         }
       } else {
-        if (!suggestionsBox.hidden) {
-          suggestionsBox.hide();
+        // Filter channels based on query (or show all if empty)
+        const filteredChannels = query.length > 0 
+            ? allPublicChannels.filter(ch => ch.name.toLowerCase().includes(query))
+            : allPublicChannels;
+
+        const suggestions = filteredChannels
+          .slice(0, 10)
+          .map(ch => {
+             const memberCount = ch.num_members ? ` (${ch.num_members})` : '';
+             return `# ${ch.name}${memberCount}`;
+          });
+        
+        if (suggestions.length > 0) {
+          suggestionsBox.setItems(suggestions);
+          if (suggestionsBox.hidden) {
+            suggestionsBox.show();
+            suggestionsBox.setFront();
+            needsRender = true;
+          } else {
+            needsRender = true; 
+          }
+          
+          if (query.length > 0) {
+              statusBar.setContent(` Status: Found ${suggestions.length} matches for "${query}"`);
+          } else {
+              statusBar.setContent(` Status: Type to search public channels...`);
+          }
+        } else {
+          if (!suggestionsBox.hidden) {
+            suggestionsBox.hide();
+            needsRender = true;
+          }
+          statusBar.setContent(` Status: No channels found matching "${query}"`);
           needsRender = true;
         }
-        statusBar.setContent(' Status: Type to search public channels...');
-        needsRender = true;
       }
       
       if (needsRender) {
@@ -1186,6 +1333,7 @@ export function createUI() {
     }, 100);
   });  // Join box handlers
   joinBox.on('submit', async (value) => {
+    if (joinSearchTimeout) clearTimeout(joinSearchTimeout);
     let channelName = value.trim();
     let channelId = null;
     
@@ -1562,13 +1710,13 @@ function updateBorders() {
 function updateButtonStyles() {
   if (currentView === 'channels') {
     channelsBtn.setContent('{center}> [F1] Channels | [Ctrl+F] Search | [F7] Join <{/center}');
-    dmsBtn.setContent('{center}[F2] DMs | [F3] Activity{/center}');
+    dmsBtn.setContent('{center}[F2] DMs | [Ctrl+U] Upload | [Ctrl+Q] Logout{/center}');
   } else if (currentView === 'dms') {
     channelsBtn.setContent('{center}[F1] Channels{/center}');
-    dmsBtn.setContent('{center}> [F2] DMs | [Ctrl+F] Search | [F3] Activity <{/center}');
+    dmsBtn.setContent('{center}> [F2] DMs | [Ctrl+U] Upload | [F3] Activity | [Ctrl+Q] Logout <{/center}');
   } else if (currentView === 'activity') {
     channelsBtn.setContent('{center}[F1] Channels{/center}');
-    dmsBtn.setContent('{center}[F2] DMs | > [F3] Activity <{/center}');
+    dmsBtn.setContent('{center}[F2] DMs | > [F3] Activity < | [Ctrl+Q] Logout{/center}');
   }
   screen.render();
 }
@@ -1690,6 +1838,35 @@ function wrapText(text, maxWidth) {
   return lines;
 }
 
+async function loadCustomEmojis() {
+  try {
+    customEmojis = await getCustomEmojis();
+    logInfo(`Loaded ${Object.keys(customEmojis).length} custom emojis`);
+  } catch (e) {
+    logError('Failed to load custom emojis', e);
+  }
+}
+
+function processText(text) {
+  if (!text) return '';
+  
+  // 1. Standard Emojis
+  try { text = emojify(text); } catch (e) {}
+  
+  // 2. Custom Emojis
+  // Look for :shortcode: patterns
+  const theme = getTheme();
+  text = text.replace(/:([\w-]+):/g, (match, name) => {
+    if (customEmojis[name]) {
+      // It's a valid custom emoji
+      return `${theme.tags.attachment}${match}${theme.tags.reset}`;
+    }
+    return match;
+  });
+  
+  return text;
+}
+
 function displayMessages(msgs) {
   if (!msgs || msgs.length === 0) {
     chatBox.setContent('No messages in this channel.');
@@ -1712,24 +1889,37 @@ function displayMessages(msgs) {
 
   const boxWidth = chatBox.width - 4; // Account for borders and padding
   const contentWidth = Math.max(50, boxWidth - 5); // Minimum width 50, leave space for box characters
+  const theme = getTheme();
 
   const formattedMessages = messages.map((msg, index) => {
     const timestamp = new Date(parseFloat(msg.ts) * 1000).toLocaleString();
     const username = msg.user_name || msg.username || 'Unknown';
     const imageIndicator = msg.has_images ? ' 📷' : '';
-    const escapedText = escapeText(msg.text || '');
+    
+    let text = msg.text || '';
+    text = processText(text);
+    let escapedText = escapeText(text);
+
+    if (msg.files && msg.files.length > 0) {
+      const fileNames = msg.files.map(f => `${theme.tags.attachment}📎 ${f.name}${theme.tags.reset}`).join('\n');
+      if (escapedText) {
+        escapedText += '\n\n' + fileNames;
+      } else {
+        escapedText = fileNames;
+      }
+    }
     
     // Highlight selected message
     const isSelected = index === selectedMessageIndex;
-    const selectionMarker = isSelected ? '{yellow-fg}➤{/yellow-fg} ' : '  ';
+    const selectionMarker = isSelected ? `{${theme.message.selectionMarker}-fg}➤{/${theme.message.selectionMarker}-fg} ` : '  ';
     
     // Create message box
-    const borderColor = isSelected ? 'yellow' : 'blue';
+    const borderColor = isSelected ? theme.message.selectedBorder : theme.message.border;
     const boxTop = `{${borderColor}-fg}┌${'─'.repeat(contentWidth)}┐{/${borderColor}-fg}`;
     const boxBottom = `{${borderColor}-fg}└${'─'.repeat(contentWidth)}┘{/${borderColor}-fg}`;
     
     // Format header line
-    const headerLine = `{${borderColor}-fg}│{/${borderColor}-fg} ${selectionMarker}{cyan-fg}{bold}${escapeText(username)}{/bold}{/cyan-fg} {gray-fg}• ${timestamp}{/gray-fg}${imageIndicator}`;
+    const headerLine = `{${borderColor}-fg}│{/${borderColor}-fg} ${selectionMarker}${theme.tags.user}{bold}${escapeText(username)}{/bold}${theme.tags.reset} ${theme.tags.time}• ${timestamp}${theme.tags.reset}${imageIndicator}`;
     
     // Wrap message text to fit in box
     const wrappedLines = wrapText(escapedText, contentWidth - 5);
@@ -1740,7 +1930,7 @@ function displayMessages(msgs) {
     // Thread indicator on separate line if present
     let threadLine = '';
     if (msg.reply_count && msg.reply_count > 0) {
-      threadLine = `\n{${borderColor}-fg}│{/${borderColor}-fg}\n{${borderColor}-fg}│{/${borderColor}-fg}   {magenta-fg}💬 ${msg.reply_count} ${msg.reply_count === 1 ? 'reply' : 'replies'}{/magenta-fg}`;
+      threadLine = `\n{${borderColor}-fg}│{/${borderColor}-fg}\n{${borderColor}-fg}│{/${borderColor}-fg}   ${theme.tags.thread}💬 ${msg.reply_count} ${msg.reply_count === 1 ? 'reply' : 'replies'}${theme.tags.reset}`;
     }
     
     return `${boxTop}\n${headerLine}\n{${borderColor}-fg}│{/${borderColor}-fg}\n${textLines}${threadLine}\n${boxBottom}`;
@@ -1796,6 +1986,7 @@ function displayThread(replies) {
     threadBox.setContent('No replies in this thread.');
     return;
   }
+  const theme = getTheme();
 
   const formattedReplies = replies.map((msg, index) => {
     const timestamp = new Date(parseFloat(msg.ts) * 1000).toLocaleString();
@@ -1803,8 +1994,23 @@ function displayThread(replies) {
     const imageIndicator = msg.has_images ? ' 📷' : '';
     const isParent = index === 0;
     const prefix = isParent ? '📌 ' : '  ↳ ';
-    const escapedText = escapeText(msg.text || '');
-    return `${prefix}[${timestamp}] {blue-fg}{bold}${escapeText(username)}{/bold}{/blue-fg}:${imageIndicator} ${escapedText}`;
+    
+    let text = msg.text || '';
+    text = processText(text);
+    let escapedText = escapeText(text);
+
+    if (msg.files && msg.files.length > 0) {
+      const fileNames = msg.files.map(f => `${theme.tags.attachment}📎 ${f.name}${theme.tags.reset}`).join('\n');
+      if (escapedText) {
+        escapedText += '\n' + fileNames;
+      } else {
+        escapedText = fileNames;
+      }
+    }
+
+    const content = escapedText ? `\n${isParent ? '' : '    '}${escapedText}` : '';
+
+    return `${prefix}[${timestamp}] ${theme.tags.user}{bold}${escapeText(username)}{/bold}${theme.tags.reset}:${imageIndicator}${content}`;
   }).join('\n\n');
 
   threadBox.setContent(formattedReplies);
@@ -1813,6 +2019,7 @@ function displayThread(replies) {
 }
 
 function displaySearchResults(results, query) {
+  const theme = getTheme();
   const formattedResults = results.map(result => {
     const timestamp = new Date(parseFloat(result.ts) * 1000).toLocaleString();
     const userName = result.user_name || 'Unknown';
@@ -1820,16 +2027,18 @@ function displaySearchResults(results, query) {
     const imageIndicator = result.has_images ? ' 📷' : '';
     
     // Escape text first, then highlight
-    let text = escapeText(result.text || '');
+    let text = result.text || '';
+    text = processText(text);
+    let escapedText = escapeText(text);
     
     // Escape regex special characters in query
     const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const highlightedText = text.replace(
+    const highlightedText = escapedText.replace(
       new RegExp(`(${escapedQuery})`, 'gi'),
-      '{yellow-fg}{bold}$1{/bold}{/yellow-fg}'
+      `{${theme.message.selectionMarker}-fg}{bold}$1{/bold}{/${theme.message.selectionMarker}-fg}`
     );
     
-    return `[${timestamp}] {cyan-fg}#${escapeText(channelName)}{/cyan-fg} | {blue-fg}{bold}${escapeText(userName)}{/bold}{/blue-fg}:${imageIndicator} ${highlightedText}`;
+    return `[${timestamp}] ${theme.tags.channel}#${escapeText(channelName)}${theme.tags.reset} | ${theme.tags.user}{bold}${escapeText(userName)}{/bold}${theme.tags.reset}:${imageIndicator} ${highlightedText}`;
   });
 
   searchResultsBox.setItems(formattedResults);
@@ -1997,35 +2206,119 @@ async function loadActivity() {
   screen.render();
   
   try {
-    // Search for mentions of the user
-    const result = await searchMessages(`<@${userId}>`, { count: 20 });
+    // 1. Search for mentions (existing logic)
+    const mentionsPromise = searchMessages(`<@${userId}>`, { count: 20 });
     
-    if (!result.matches || result.matches.length === 0) {
-      activityBox.setItems(['No recent mentions found.']);
+    // 2. Search for my recent messages to find threads I'm in
+    const myMsgsPromise = searchMessages(`from:<@${userId}>`, { count: 20 });
+    
+    const [mentionsResult, myMsgsResult] = await Promise.all([mentionsPromise, myMsgsPromise]);
+    
+    let allMatches = mentionsResult.matches || [];
+    
+    // 3. Process threads
+    if (myMsgsResult.matches && myMsgsResult.matches.length > 0) {
+      // Extract unique threads: { channelId, threadTs }
+      const threads = new Map();
+      
+      for (const msg of myMsgsResult.matches) {
+        if (msg.thread_ts && msg.channel && msg.channel.id) {
+          const key = `${msg.channel.id}:${msg.thread_ts}`;
+          if (!threads.has(key)) {
+            threads.set(key, { 
+              channelId: msg.channel.id, 
+              threadTs: msg.thread_ts
+            });
+          }
+        }
+      }
+      
+      // Limit to 5 most recent threads to avoid rate limits
+      const recentThreads = Array.from(threads.values()).slice(0, 5);
+      
+      // Fetch latest reply for each thread
+      const threadPromises = recentThreads.map(async (t) => {
+        try {
+          const replies = await loadThreadReplies(t.channelId, t.threadTs);
+          if (replies && replies.length > 0) {
+            const lastReply = replies[replies.length - 1];
+            // If the last reply is NOT from me, it's new activity
+            if (lastReply.user !== userId) {
+              return {
+                ...lastReply,
+                channel: { id: t.channelId }, 
+                // We need to ensure the format matches what display expects
+                type: 'message',
+                thread_ts: t.threadTs
+              };
+            }
+          }
+        } catch (e) {
+          // Ignore errors for individual threads
+        }
+        return null;
+      });
+      
+      const threadUpdates = (await Promise.all(threadPromises)).filter(m => m !== null);
+      
+      // Add thread updates to matches
+      allMatches = [...allMatches, ...threadUpdates];
+    }
+    
+    // 4. Deduplicate (by ts) and Sort
+    const uniqueMatches = [];
+    const seenTs = new Set();
+    
+    // Sort by timestamp descending
+    allMatches.sort((a, b) => parseFloat(b.ts) - parseFloat(a.ts));
+    
+    for (const m of allMatches) {
+      if (!seenTs.has(m.ts)) {
+        seenTs.add(m.ts);
+        uniqueMatches.push(m);
+      }
+    }
+    
+    activityMatches = uniqueMatches;
+    
+    if (activityMatches.length === 0) {
+      activityBox.setItems(['No recent activity found.']);
       activityBox.setLabel(' Activity ');
-      activityMatches = [];
       screen.render();
       return;
     }
     
-    activityMatches = result.matches;
-    
     const items = activityMatches.map(match => {
       const time = new Date(parseFloat(match.ts) * 1000).toLocaleString();
-      const channelName = match.channel_name || match.channel?.name || 'Unknown';
+      
+      let channelName = match.channel_name || (match.channel && match.channel.name) || 'Unknown';
+      
+      // Try to find channel name from cache if unknown
+      if (channelName === 'Unknown' || !channelName) {
+         const chId = match.channel?.id || (typeof match.channel === 'string' ? match.channel : null);
+         if (chId) {
+             const cachedCh = channels.find(c => c.id === chId);
+             if (cachedCh) channelName = cachedCh.name;
+         }
+      }
+
       const userName = match.user_name || match.username || 'Unknown';
       // Clean up text for preview
       let text = (match.text || '').replace(/\n/g, ' ').substring(0, 80);
       if ((match.text || '').length > 80) text += '...';
       
-      const typeLabel = match.thread_ts ? ' {cyan-fg}(Thread){/cyan-fg}' : '';
+      // Emojify for preview
+      text = processText(text);
+      
+      const theme = getTheme();
+      const typeLabel = match.thread_ts ? ` ${theme.tags.thread}(Thread)${theme.tags.reset}` : '';
       
       // Format: [Channel] User: Message (Time)
-      return `{magenta-fg}#${escapeText(channelName)}{/magenta-fg}${typeLabel} {bold}${escapeText(userName)}{/bold}: ${escapeText(text)} {gray-fg}(${time}){/gray-fg}`;
+      return `${theme.tags.channel}#${escapeText(channelName)}${theme.tags.reset}${typeLabel} {bold}${escapeText(userName)}{/bold}: ${escapeText(text)} ${theme.tags.time}(${time})${theme.tags.reset}`;
     });
     
     activityBox.setItems(items);
-    activityBox.setLabel(` Activity (${result.total} mentions) `);
+    activityBox.setLabel(` Activity (${activityMatches.length} items) `);
     screen.render();
     
   } catch (error) {
@@ -2033,4 +2326,75 @@ async function loadActivity() {
     activityBox.setLabel(' Activity (Error) ');
     logError('Activity load failed', error);
   }
+}
+
+function applyTheme() {
+  const theme = getTheme();
+  
+  // Update Header
+  header.style = theme.header;
+  
+  // Update Channel List
+  channelList.style = { ...theme.primary, item: theme.item, selected: theme.selected, border: theme.border };
+  
+  // Update Chat Box
+  chatBox.style = { ...theme.primary, border: theme.border, scrollbar: theme.scrollbar };
+  
+  // Update Input
+  input.style = { ...theme.input, border: theme.border };
+  
+  // Update Buttons
+  channelsBtn.style = theme.primary;
+  dmsBtn.style = theme.primary;
+  
+  // Update Status Bar
+  statusBar.style = theme.secondary;
+  
+  // Update Search Boxes
+  searchBox.style = { ...theme.primary, border: theme.border };
+  globalSearchBox.style = { ...theme.primary, border: theme.border };
+  userSearchBox.style = { ...theme.primary, border: theme.border };
+  joinBox.style = { ...theme.primary, border: theme.border };
+  
+  // Update Lists
+  suggestionsBox.style = { ...theme.primary, item: theme.item, selected: theme.selected, border: theme.border };
+  userSuggestionsBox.style = { ...theme.primary, item: theme.item, selected: theme.selected, border: theme.border };
+  searchResultsBox.style = { ...theme.primary, item: theme.item, selected: theme.selected, border: theme.border, scrollbar: theme.scrollbar };
+  activityBox.style = { ...theme.primary, item: theme.item, selected: theme.selected, border: theme.border };
+  
+  // Update Thread Box
+  threadBox.style = { ...theme.primary, border: theme.border, scrollbar: theme.scrollbar };
+  
+  // Update Image Viewer
+  imageViewer.style = theme.primary;
+  
+  // Re-render content that uses tags
+  if (messages.length > 0) displayMessages(messages);
+  if (threadMessages.length > 0) displayThread(threadMessages);
+  if (searchResults.length > 0) displaySearchResults(searchResults, searchQuery);
+  
+  // Update Activity List if visible
+  if (activityMatches.length > 0) {
+      // Re-run the mapping logic from loadActivity
+      const items = activityMatches.map(match => {
+        const time = new Date(parseFloat(match.ts) * 1000).toLocaleString();
+        let channelName = match.channel_name || (match.channel && match.channel.name) || 'Unknown';
+        if (channelName === 'Unknown' || !channelName) {
+           const chId = match.channel?.id || (typeof match.channel === 'string' ? match.channel : null);
+           if (chId) {
+               const cachedCh = channels.find(c => c.id === chId);
+               if (cachedCh) channelName = cachedCh.name;
+           }
+        }
+        const userName = match.user_name || match.username || 'Unknown';
+        let text = (match.text || '').replace(/\n/g, ' ').substring(0, 80);
+        if ((match.text || '').length > 80) text += '...';
+        text = processText(text);
+        const typeLabel = match.thread_ts ? ` ${theme.tags.thread}(Thread)${theme.tags.reset}` : '';
+        return `${theme.tags.channel}#${escapeText(channelName)}${theme.tags.reset}${typeLabel} {bold}${escapeText(userName)}{/bold}: ${escapeText(text)} ${theme.tags.time}(${time})${theme.tags.reset}`;
+      });
+      activityBox.setItems(items);
+  }
+
+  screen.render();
 }

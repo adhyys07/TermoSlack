@@ -1,0 +1,49 @@
+{
+    "display_information": {
+        "name": "TermoSlack",
+        "description": "Terminal-based Slack Client",
+        "background_color": "#000000"
+    },
+    "features": {
+        "bot_user": {
+            "display_name": "TermoSlack Bot",
+            "always_online": false
+        }
+    },
+    "oauth_config": {
+        "redirect_urls": [
+            "http://localhost:3000/auth/callback"
+        ],
+        "scopes": {
+            "user": [
+                "channels:history",
+                "channels:join",
+                "channels:read",
+                "channels:write",
+                "chat:write",
+                "files:read",
+                "groups:history",
+                "groups:read",
+                "groups:write",
+                "im:history",
+                "im:read",
+                "im:write",
+                "mpim:history",
+                "mpim:read",
+                "mpim:write",
+                "search:read",
+                "users:read"
+            ],
+            "bot": [
+                "channels:history",
+                "chat:write",
+                "users:read"
+            ]
+        }
+    },
+    "settings": {
+        "org_deploy_enabled": false,
+        "socket_mode_enabled": false,
+        "token_rotation_enabled": false
+    }
+}
