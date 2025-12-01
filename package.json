@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "node bootstrap.cjs",
-    "build": "node build.js"
+    "build": "node build.js",
+    "build:linux": "caxa --input . --output termoslack -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/bootstrap.cjs\""
   },
   "dependencies": {
     "@ngrok/ngrok": "^1.6.0",
@@ -30,6 +31,7 @@
     "terminal-image": "^4.1.0"
   },
   "devDependencies": {
-    "caxa": "^3.0.1"
+    "caxa": "^3.0.1",
+    "pkg": "^5.8.1"
   }
 }

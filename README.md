@@ -146,6 +146,4 @@ This creates `termoslack.exe` that you can run anywhere without Node.js installe
 - The app never sends your credentials or messages to any third party
 - Your token grants the same access as your regular Slack session
 
-## License
 
-ISC
