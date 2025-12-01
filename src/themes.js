@@ -2,7 +2,7 @@ export const themes = {
   default: {
     name: 'Default',
     primary: { fg: 'white', bg: 'black' },
-    secondary: { fg: 'gray', bg: 'black' },
+    secondary: { fg: 'white', bg: 'black' },
     border: { fg: 'white', bg: 'black' },
     selected: { fg: 'black', bg: 'white' },
     item: { fg: 'white', bg: 'black' },

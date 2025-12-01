@@ -440,31 +440,13 @@ export function createUI() {
   screen.append(dmsBtn);
   screen.append(statusBar);
   screen.append(joinBox);
+  // suggestionsBox is defined at line 233, so it is valid here.
   screen.append(suggestionsBox);
   screen.append(userSearchBox);
   screen.append(userSuggestionsBox);
 
-  // Suggestions Box for channel join (hidden by default)
-  suggestionsBox = blessed.list({
-    top: 6,
-    left: 0,
-    width: '25%',
-    height: 10,
-    label: ' Suggestions ',
-    hidden: true,
-    keys: true,
-    vi: true,
-    tags: true,
-    style: {
-      ...getTheme().primary,
-      item: getTheme().item,
-      selected: getTheme().selected,
-      border: getTheme().border
-    },
-    border: {
-      type: 'line'
-    }
-  });
+  // Global Search Box (hidden by default)
+
 
   // Global Search Box (hidden by default)
   globalSearchBox = blessed.textbox({
@@ -1269,6 +1251,9 @@ export function createUI() {
       // Move selection down in suggestions
       suggestionsBox.down();
       screen.render();
+      // Prevent default to avoid moving cursor in textbox if possible, 
+      // though readInput might ignore this return value.
+      // We can try to emit a 'keypress' that doesn't do anything or just return.
       return;
     }
     if (key.name === 'up' && !suggestionsBox.hidden) {
@@ -1304,13 +1289,12 @@ export function createUI() {
         
         if (suggestions.length > 0) {
           suggestionsBox.setItems(suggestions);
-          if (suggestionsBox.hidden) {
-            suggestionsBox.show();
-            suggestionsBox.setFront();
-            needsRender = true;
-          } else {
-            needsRender = true; 
-          }
+          // Always show and bring to front if we have items
+          suggestionsBox.show();
+          suggestionsBox.setFront();
+          // Ensure joinBox stays focused but suggestions are visible
+          joinBox.focus(); 
+          needsRender = true;
           
           if (query.length > 0) {
               statusBar.setContent(` Status: Found ${suggestions.length} matches for "${query}"`);
@@ -2372,7 +2356,8 @@ function applyTheme() {
   updateStyle(header, headerStyle);
   
   // Update Channel List
-  updateStyle(channelList, { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle });
+  // For lists, we replace the style object to ensure item/selected styles are picked up correctly
+  if (channelList) channelList.style = { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle };
   
   // Update Chat Box
   updateStyle(chatBox, { ...primary, border: borderStyle, scrollbar: scrollbarStyle });
@@ -2398,10 +2383,10 @@ function applyTheme() {
   updateStyle(joinBox, { ...primary, border: borderStyle });
   
   // Update Lists
-  updateStyle(suggestionsBox, { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle });
-  updateStyle(userSuggestionsBox, { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle });
-  updateStyle(searchResultsBox, { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle, scrollbar: scrollbarStyle });
-  updateStyle(activityBox, { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle });
+  if (suggestionsBox) suggestionsBox.style = { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle };
+  if (userSuggestionsBox) userSuggestionsBox.style = { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle };
+  if (searchResultsBox) searchResultsBox.style = { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle, scrollbar: scrollbarStyle };
+  if (activityBox) activityBox.style = { ...primary, item: itemStyle, selected: selectedStyle, border: borderStyle };
   
   // Update Thread Box
   updateStyle(threadBox, { ...primary, border: borderStyle, scrollbar: scrollbarStyle });
