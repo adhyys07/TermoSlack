@@ -1,6 +1,11 @@
 .env
-package.json
 src/crash.log
 src/oauth_error.log
-termoslack.exe
+.npm/
+.image-cache/
+node_modules/
 ngrok.exe
+
+# compiled should be in releases
+termoslack
+termoslack.exe
